@@ -1,0 +1,34 @@
+[package]
+name = "nu_plugin_xlsx"
+version = "0.1.0"
+edition = "2021"
+description = "A Nushell plugin for writing Excel (.xlsx) files"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/ChristianLemer/nu_plugin_xlsx"
+keywords = ["nushell", "plugin", "xlsx", "excel"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+nu-plugin = "0.111.0"
+nu-protocol = { version = "0.111.0", features = ["plugin"] }
+rust_xlsxwriter = { version = "0.82", features = ["chrono", "ryu"] }
+chrono = "0.4"
+
+[dev-dependencies]
+calamine = "0.26"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+panic = "abort"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+unwrap_used = "deny"
+
+[lints.rust]
+unsafe_code = "deny"
