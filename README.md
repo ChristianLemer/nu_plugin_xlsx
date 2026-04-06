@@ -64,6 +64,12 @@ Tests use `calamine` (dev dependency) to read back the generated xlsx and verify
 | `mixed_types_in_same_column`          | Mixed types in a column are handled correctly          |
 | `rejects_non_table_input`             | Non-table input returns an error                       |
 
+## About
+
+This is my first open-source project. I've been a software engineer in enterprise environments for years but hadn't published anything publicly until now.
+
+This project is developed with [Claude Code](https://claude.ai/claude-code) as a pair programming partner. Design decisions, architecture, and code review are human-driven — AI assists with implementation, research, and iteration.
+
 ## License
 
 MIT
