@@ -10,8 +10,8 @@ keywords = ["nushell", "plugin", "xlsx", "excel"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-nu-plugin = "0.111.0"
-nu-protocol = { version = "0.111.0", features = ["plugin"] }
+nu-plugin = "0.112.1"
+nu-protocol = { version = "0.112.1", features = ["plugin"] }
 rust_xlsxwriter = { version = "0.82", features = ["chrono", "ryu"] }
 chrono = "0.4"
 

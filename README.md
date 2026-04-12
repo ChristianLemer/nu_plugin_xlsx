@@ -2,18 +2,29 @@
 
 A Nushell plugin for writing Excel (.xlsx) files. Outputs real Excel Table objects with auto-filter, banded rows, and autofit by default.
 
-> **Status**: Work in progress — not ready for use or contributions yet. See [SPEC.md](SPEC.md) for the design.
-
-## Build
-
-```bash
-cargo build --release
-```
-
 ## Install
 
-```bash
-plugin add target/release/nu_plugin_xlsx
+```nushell
+cargo install nu_plugin_xlsx --locked
+plugin add (which nu_plugin_xlsx | get path.0)
+plugin use xlsx
+```
+
+### Testing a pre-release
+
+Download the binary for your platform from [Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases) and rename it to `nu_plugin_xlsx` (or `nu_plugin_xlsx.exe` on Windows).
+
+On macOS, clear the quarantine flag and make it executable:
+
+```nushell
+xattr -d com.apple.quarantine nu_plugin_xlsx
+chmod +x nu_plugin_xlsx
+```
+
+Then register it (`plugin add` records the full path, so don't move the binary after this):
+
+```nushell
+plugin add nu_plugin_xlsx
 plugin use xlsx
 ```
 
