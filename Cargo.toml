@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_xlsx"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "A Nushell plugin for writing Excel (.xlsx) files"
 license = "MIT"
@@ -10,8 +10,8 @@ keywords = ["nushell", "plugin", "xlsx", "excel"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-nu-plugin = "0.112.1"
-nu-protocol = { version = "0.112.1", features = ["plugin"] }
+nu-plugin = "0.113.0"
+nu-protocol = { version = "0.113.0", features = ["plugin"] }
 rust_xlsxwriter = { version = "0.82", features = ["chrono", "ryu"] }
 chrono = "0.4"
 
