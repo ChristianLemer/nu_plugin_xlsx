@@ -29,7 +29,7 @@ impl PluginCommand for ToXlsx {
     fn signature(&self) -> Signature {
         Signature::build("to xlsx")
             .input_output_type(Type::table(), Type::Binary)
-            .input_output_type(Type::Record(Box::default()), Type::Binary)
+            .input_output_type(Type::record(), Type::Binary)
             .switch(
                 "raw",
                 "Write plain cells instead of an Excel Table",
