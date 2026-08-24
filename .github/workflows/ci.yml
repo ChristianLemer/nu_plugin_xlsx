@@ -9,14 +9,28 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Three hosts, not one. The plugin ships binaries for all of them, and a
+  # break specific to Windows or macOS would otherwise stay invisible until
+  # a tag — the worst moment to discover it.
   check:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Verify nu metadata matches locked nu-plugin
+        if: runner.os == 'Linux'
+        run: ./scripts/check-nu-metadata.sh
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt -- --check
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test
+        with:
+          key: ${{ matrix.os }}
+      - name: Format
+        if: runner.os == 'Linux'
+        run: cargo fmt -- --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      - run: cargo test --locked

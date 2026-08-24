@@ -25,24 +25,49 @@ jobs:
             echo "::error::Tag $tag does not match Cargo.toml version $manifest"
             exit 1
           fi
+
+      # --strict only on a tag: that is the moment the metadata has to be exact.
+      # A workflow_dispatch publishes nothing, so it runs lax — otherwise the guard
+      # blocks the very gesture meant to exercise the packaging before a release.
+      - name: Verify nu metadata matches locked nu-plugin
+        run: ./scripts/check-nu-metadata.sh ${{ startsWith(github.ref, 'refs/tags/v') && '--strict' || '' }}
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      - run: cargo test --locked
 
   build:
     needs: test
     strategy:
       matrix:
         include:
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact: nu_plugin_xlsx.exe
+          # Static musl: one Linux artifact that runs on any distro — Arch,
+          # Debian, Alpine, NixOS. A glibc build made on ubuntu-latest would
+          # refuse to run on any older glibc. Viable here only because the
+          # dependency tree has no C libraries, just libc bindings.
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            bin: nu_plugin_xlsx
+            archive: tar.gz
           - os: macos-latest
             target: aarch64-apple-darwin
-            artifact: nu_plugin_xlsx
+            bin: nu_plugin_xlsx
+            archive: tar.gz
+          # macos-latest is arm64. Intel needs an explicit image: macos-13 was
+          # retired in December 2025, and macos-15-intel is the last x86_64 macOS
+          # image GitHub will offer — it goes away in August 2027, after which
+          # this entry has to go too.
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            bin: nu_plugin_xlsx
+            archive: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: nu_plugin_xlsx.exe
+            archive: zip
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -52,43 +77,90 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install musl linker
+        if: endsWith(matrix.target, '-musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
 
+      # Downloaded archives lose the release page as context, so the Nushell
+      # version belongs in the filename.
+      - name: Resolve nu version
+        id: nu
+        shell: bash
+        run: |
+          locked=$(awk '/^name = "nu-plugin"$/{f=1;next} f && /^version = /{print $3; exit}' Cargo.lock | tr -d '"')
+          echo "version=$locked" >> "$GITHUB_OUTPUT"
+
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      # Nushell refuses to register a binary whose filename does not start with
+      # `nu_plugin_`, and `plugin use` takes the name from the file. Shipping an
+      # archive means the extracted binary is already called nu_plugin_xlsx —
+      # no rename step, and no way to get the name wrong.
+      - name: Package
+        id: pkg
+        shell: bash
+        run: |
+          name="nu_plugin_xlsx-nu${{ steps.nu.outputs.version }}-${{ matrix.target }}"
+          mkdir -p dist
+          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "dist/${{ matrix.bin }}"
+          cd dist
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            7z a "../${name}.zip" "${{ matrix.bin }}"
+          else
+            tar czf "../${name}.tar.gz" "${{ matrix.bin }}"
+          fi
+          echo "archive=${name}.${{ matrix.archive }}" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nu_plugin_xlsx-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/${{ matrix.artifact }}
+          name: ${{ steps.pkg.outputs.archive }}
+          path: ${{ steps.pkg.outputs.archive }}
 
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Prepare release files
+      - name: Assemble and checksum
         run: |
-          cd artifacts
-          for dir in */; do
-            target="${dir%/}"
-            target="${target#nu_plugin_xlsx-}"
-            file=$(find "$dir" -type f | head -1)
-            ext=""
-            [[ "$file" == *.exe ]] && ext=".exe"
-            cp "$file" "../nu_plugin_xlsx-${target}${ext}"
+          find artifacts -type f -exec mv -t . {} +
+          # Snapshot the list first: the loop must not iterate over the
+          # .sha256 files it creates.
+          archives=$(ls nu_plugin_xlsx-*)
+          for f in $archives; do
+            sha256sum "$f" > "$f.sha256"
           done
+          echo "Assets that would be published:"
+          ls -l nu_plugin_xlsx-*
+
+      # A workflow_dispatch run stops here: everything above is exercised —
+      # the matrix, the packaging, the naming, the checksums — and nothing is
+      # created on GitHub. Only a tag publishes.
+      - name: Classify the tag
+        id: rel
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          v="${GITHUB_REF_NAME#v}"      # 0.3.0-beta.1+nu-0.115.1
+          core="${v%%+*}"               # 0.3.0-beta.1 — drop the build metadata,
+                                        # whose own `nu-` hyphen is not a prerelease
+          case "$core" in
+            *-*) echo "prerelease=true"  >> "$GITHUB_OUTPUT" ;;
+            *)   echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
+          esac
 
       - name: Create release
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          prerelease: ${{ contains(github.ref, '-rc') }}
+          prerelease: ${{ steps.rel.outputs.prerelease }}
           files: nu_plugin_xlsx-*
