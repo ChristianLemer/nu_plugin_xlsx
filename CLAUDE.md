@@ -4,9 +4,10 @@ Project-specific instructions for AI assistants working in this repo.
 
 ## VCS: Jujutsu (jj), not plain git
 
-This repo uses **jj in non-colocated mode**: `.jj/` at the root, no `.git/` beside it. The backing git repo lives inside `.jj/repo/store/git/`.
+This repo is driven by **jj**. A clone may be colocated (`.git` and `.jj` side by side) or not (`.jj/` alone, the backing git repo inside `.jj/repo/store/git/`) — `jj git clone --colocate` decides it per machine, so check before assuming.
 
-- Use `jj` commands for local VCS operations (`jj st`, `jj describe`, `jj new`, `jj bookmark`, `jj git push`). Plain `git status` / `git commit` at the working-copy root will fail with "not a git repository".
+- Use `jj` commands for local VCS operations (`jj st`, `jj describe`, `jj new`, `jj bookmark`, `jj git push`).
+- **Never read repository state from git.** Non-colocated, `git status` fails outright. Colocated, it answers — and the answer misleads: always *detached HEAD*, because jj keeps HEAD detached and drives the working copy itself. A succeeding `git status` is the dangerous case, since it reads like a normal git repo.
 - Default bookmark is `trunk` (matches the GitHub default branch). Verify with `jj bookmark list` before advancing.
 - Tags: jj doesn't manage tags natively. Push the bookmark with `jj git push`, then create the tag on GitHub (`gh release create vX.Y.Z ...`).
 - `gh` CLI works normally — only the working-copy interaction differs from standard git.
@@ -71,3 +72,16 @@ The release workflow flags a prerelease by reading the **version core**, not the
 
 - [SPEC.md](SPEC.md) is the authority for scope and command design. Consult it before expanding surface area.
 - [README.md](README.md) is user-facing; keep it short and example-driven.
+
+## Where a document lives
+
+Decide by **mutability**, not importance.
+
+- **Will be edited again** — plans, handovers, session state, brainstorm scaffolds. They live in the vault, reached through the `meta` and `docs` symlinks, and are never versioned. They are transit: superseded, then deleted.
+- **Finished when written** — a decision and its reason. Versioned, in `SPEC.md`, in the same commit as the code it justifies.
+
+Why mutability and not importance: history here gets rewritten. A document edited across many commits is dragged through every rebase and can land in a commit that predates the decision it records. A document written once beside its code moves with that code, untouched.
+
+The test: if losing the vault entirely left an unanswerable "why is this code like this?", the split is wrong. Deliberation dies in the vault; the outcome lands in `SPEC.md`.
+
+`## Open questions` in `SPEC.md` holds a question until it is settled. Settling it means moving it into the body of the spec, in the commit that implements it — never recording the answer in a plan.
