@@ -9,7 +9,7 @@ This repo is driven by **jj**. A clone may be colocated (`.git` and `.jj` side b
 - Use `jj` commands for local VCS operations (`jj st`, `jj describe`, `jj new`, `jj bookmark`, `jj git push`).
 - **Never read repository state from git.** Non-colocated, `git status` fails outright. Colocated, it answers — and the answer misleads: always *detached HEAD*, because jj keeps HEAD detached and drives the working copy itself. A succeeding `git status` is the dangerous case, since it reads like a normal git repo.
 - Default bookmark is `trunk` (matches the GitHub default branch). Verify with `jj bookmark list` before advancing.
-- Tags: jj doesn't manage tags natively. Push the bookmark with `jj git push`, then create the tag on GitHub (`gh release create vX.Y.Z ...`).
+- Tags: jj doesn't manage tags natively. In a colocated clone, use plain `git tag` on the backing repo — see *Release hygiene* for why that beats `gh release create`.
 - `gh` CLI works normally — only the working-copy interaction differs from standard git.
 
 ## Release hygiene
@@ -57,7 +57,18 @@ Why the isolation: keeps `jj log` / `git log --grep "^Bump"` a clean timeline of
 3. Verify locally before committing: `./scripts/check-nu-metadata.sh --strict`.
 4. `jj describe -m "Bump to X.Y.Z+nu-A.B.C"` and `jj new`.
 5. `jj bookmark move trunk --to @-` then `jj git push`.
-6. Create the tag: `vX.Y.Z+nu-A.B.C` (on GitHub via `gh release create`, or inside the backing git repo). `+` is legal in a git ref name.
+6. Tag the bump commit and push the tag — **not** `gh release create`:
+
+```bash
+git tag "vX.Y.Z+nu-A.B.C" <the bump commit>
+git push origin "vX.Y.Z+nu-A.B.C"
+```
+
+`+` is legal in a git ref name. Three reasons the tag push wins:
+
+- **The release workflow creates the release itself**, assets attached, on `push: tags: ["v*"]`. `gh release create` would publish an empty release first and let the action fill it in afterwards — a window in which a public release has no binaries.
+- **The target is resolved locally.** `gh release create --target <bookmark>` resolves server-side, so it tags whatever the remote currently knows the bookmark to be — which, after a rewrite, may be the old stack. A local tag names the commit object and can be checked before it leaves.
+- **A local tag is free to delete.** Nothing is public until `git push origin <tag>`.
 7. Watch Actions — both guards validate before building.
 
 Supporting a new Nushell minor is this same sequence with a patch bump: `0.2.1+nu-0.114.1` → `0.2.2+nu-0.115.1`. The source should need no change; if it does, prefer fixing it in a way that keeps one source tree serving every supported minor (see [SPEC.md](SPEC.md#nushell-version-compatibility)) rather than adding version-gated code.
