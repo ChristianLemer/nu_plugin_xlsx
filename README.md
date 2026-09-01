@@ -5,27 +5,35 @@ A Nushell plugin for writing Excel (.xlsx) files. Outputs real Excel Table objec
 ## Install
 
 ```nushell
-cargo install nu_plugin_xlsx --locked
-plugin add (which nu_plugin_xlsx | get path.0)
-plugin use xlsx
+http get https://raw.githubusercontent.com/ChristianLemer/nu_plugin_xlsx/HEAD/install.nu | save -f install.nu
+nu install.nu --register
 ```
 
-> **Match your Nushell version.** A plugin binary loads into exactly one Nushell
-> minor — the protocol breaks on every one. Each release states its target in
-> the version's build metadata, e.g. `0.2.2+nu-0.115.1` for Nushell 0.115.
-> Check yours with `version | get version` and pick the matching release.
->
-> A mismatch gives you no useful clue — `plugin add` fails with an opaque
-> `nu::shell::io::broken_pipe` / `PluginWrite could not flush`, never a word
-> about versions. If you see that, check the version first.
+That is all. The installer reads the Nushell running it, picks the matching build,
+verifies its checksum and registers it. No Rust toolchain.
 
-Add `plugin use xlsx` to your config so the commands survive a restart —
+Then add `plugin use xlsx` to your config, so the commands survive a restart —
 `plugin add` only writes the registry, it doesn't load anything into scope.
+
+> **Re-run the installer after every Nushell upgrade.** A plugin binary loads into
+> exactly one Nushell minor: the protocol version is a compile-time constant, so
+> every minor is a hard break and no binary serves two. Upgrading Nushell silently
+> stops every plugin from loading.
+>
+> The failure names nothing useful — `plugin add` reports
+> `nu::shell::io::broken_pipe` / `PluginWrite could not flush`, never a word about
+> versions. If you see that, it is a version mismatch. The installer keeps a copy of
+> itself beside the binary, so re-running is local:
+>
+> ```nushell
+> nu ($nu.data-dir | path join plugins install.nu) --register
+> ```
 
 ### Install from a release download
 
-No Rust toolchain needed. Assets on [Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases)
-are named `nu_plugin_xlsx-nu<nu-version>-<target>.tar.gz` (`.zip` on Windows), one per platform:
+If you would rather do it by hand. Assets on
+[Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases) are named
+`nu_plugin_xlsx-nu<nu-version>-<target>.tar.gz` (`.zip` on Windows), one per platform:
 
 | Target | For |
 | --- | --- |
@@ -33,6 +41,8 @@ are named `nu_plugin_xlsx-nu<nu-version>-<target>.tar.gz` (`.zip` on Windows), o
 | `aarch64-apple-darwin` | Apple Silicon |
 | `x86_64-apple-darwin` | Intel Mac |
 | `x86_64-pc-windows-msvc` | Windows |
+
+Pick the one whose `nu<nu-version>` matches yours — check with `version | get version`.
 
 Extract it — the binary inside is already named `nu_plugin_xlsx`, which matters because Nushell
 refuses to register a file whose name doesn't start with `nu_plugin_`:
@@ -55,6 +65,22 @@ plugin use xlsx
 ```
 
 Each asset ships a `.sha256` beside it if you want to verify the download.
+
+### Install from crates.io
+
+Only if you have Rust and want to build against your own Nushell.
+
+```nushell
+cargo install nu_plugin_xlsx --locked
+```
+
+⚠️ **This picks the wrong build more often than not.** The Nushell target lives in the
+version's build metadata (`0.2.3+nu-0.115.1`), and semver requires build metadata to be
+*ignored* during resolution — so cargo always takes the newest release, whichever Nushell
+it targets. On Nushell 0.113 you would get the 0.115 build, which cannot load.
+
+To build from source for your own Nushell, check out the tag whose `+nu-` matches it
+and `cargo install --path .` from there.
 
 ## Usage
 
