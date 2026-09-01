@@ -17,6 +17,8 @@ chrono = "0.4"
 
 [dev-dependencies]
 calamine = "0.26"
+# Reading a column width means reading the sheet XML: calamine does not expose it.
+zip = "2.4"
 
 [profile.release]
 opt-level = 3
