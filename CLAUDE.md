@@ -71,7 +71,25 @@ git push origin "vX.Y.Z+nu-A.B.C"
 - **A local tag is free to delete.** Nothing is public until `git push origin <tag>`.
 7. Watch Actions — both guards validate before building.
 
-Supporting a new Nushell minor is this same sequence with a patch bump: `0.2.1+nu-0.114.1` → `0.2.2+nu-0.115.1`. The source should need no change; if it does, prefer fixing it in a way that keeps one source tree serving every supported minor (see [SPEC.md](SPEC.md#nushell-version-compatibility)) rather than adding version-gated code.
+### One release, one variant per supported Nushell minor
+
+A release is not a single artifact. The same code is cut once per Nushell minor still supported, and those cuts **share a semver** — they differ only in build metadata, which is precisely what semver says build metadata is for: the same version, built differently.
+
+```
+0.2.1+nu-0.113.0
+0.2.1+nu-0.114.1   ← one code, three targets, one version
+0.2.1+nu-0.115.1
+```
+
+Do *not* number them `0.2.1`, `0.2.2`, `0.2.3`: that would assert three code changes that never happened, and the rule above says a semver step means our code moved.
+
+Supporting a **new** Nushell minor when the source has not changed therefore adds a variant, not a version: `0.2.1+nu-0.116.0`. The source should need no change; if it does, prefer a fix that keeps one source tree serving every supported minor (see [SPEC.md](SPEC.md#nushell-version-compatibility)) over version-gated code. When the source *does* move, cut a new semver and re-issue the variants for the minors still supported.
+
+**Shape in the log.** Variants are sibling leaf commits hanging off the release point, one commit each, tagged and never touched again. `trunk` stays on the release point, not on a variant. The code stays a single line — there are no long-lived per-Nushell branches to maintain.
+
+**crates.io holds exactly one.** It resolves by semver and ignores build metadata, so it cannot carry `0.2.1` three times. Publish the newest target there, and treat crates.io as the last install route: a user on an older Nushell who runs `cargo install` gets a binary that cannot load. GitHub releases carry the full set, and `install.nu` picks from them by reading the running Nushell.
+
+**How deep to support.** Roughly the current minor and the two before it. Distributions lag — Arch shipped 0.113 while 0.115 was current — and a shorter window leaves whole distributions with no usable binary.
 
 Pre-releases use `-beta.N` or `-rc.N`, and the suffix goes **before** the build metadata: `0.2.2-beta.1+nu-0.115.1`. Pick by intent — `-beta` when the release path or the packaging is what needs exercising, `-rc` when the code is believed final and only confirmation is missing. They are published to GitHub only, never to crates.io: cargo excludes pre-releases from normal resolution, so publishing them would add noise without helping anyone install, while a GitHub binary is exactly what a tester wants.
 
