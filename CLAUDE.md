@@ -12,6 +12,64 @@ This repo is driven by **jj**. A clone may be colocated (`.git` and `.jj` side b
 - Tags: jj doesn't manage tags natively. In a colocated clone, use plain `git tag` on the backing repo — see *Release hygiene* for why that beats `gh release create`.
 - `gh` CLI works normally — only the working-copy interaction differs from standard git.
 
+## Setting up on a new machine
+
+None of this travels with the clone, and each item below has cost time at least once.
+
+**Toolchain.** Rust stable, edition 2021, plus a Nushell whose minor matches the `+nu-`
+metadata you intend to build against. No system packages are needed: the dependency tree
+carries no C library, so a bare `cargo build` suffices.
+
+**The `meta` and `docs` symlinks.** `meta` points at the project's folder in the Drive vault,
+`docs` at that folder's `docs/` subdirectory, where `superpowers` writes its plans and specs.
+Both are absolute, so the path differs per machine — on Linux under `~/Insync/...`, elsewhere
+wherever the vault is mounted.
+
+```bash
+V="$HOME/Insync/<account>/Google Drive/Kosmos/2. 🧠 Un Esprit Sain/Nushell XLSX Plugin"
+ln -s "$V" meta
+ln -s "$V/docs" docs
+```
+
+⚠️ **The ignore must already be in place before the links are created**, never the reverse.
+jj auto-tracks anything not ignored, and an auto-tracked symlink is *deleted from disk* at the
+next commit switch. The ignore is committed in `.gitignore` — so on a fresh clone it is
+already there and the order takes care of itself; the trap only bites if you recreate the
+ignore by hand. See the comment in `.gitignore` for why the entries carry no trailing slash.
+
+**Registering is not loading.** `plugin add` records signatures in the registry; `plugin use
+xlsx` brings the commands into scope, and only for the current session. Put `plugin use xlsx`
+in the config or the commands do not survive a restart.
+
+**Build in debug to test, never `--release`.** The release profile combines LTO with
+`codegen-units = 1`: 18 min 35 cold, against 2 min 30 in debug and under a second incremental,
+for a functionally identical binary. Release builds are the CI's job.
+
+**A registered plugin shadows a fresh binary.** `nu --plugins <path>` does *not* win over an
+already-registered plugin of the same name — the registered one answers, and your new build is
+never exercised. To test a fresh build, add a throwaway registry:
+
+```bash
+nu --plugin-config /tmp/scratch.msgpackz --plugins ./target/debug/nu_plugin_xlsx
+```
+
+**A version mismatch does not say its name.** Loading a plugin built against the wrong Nushell
+minor fails with `nu::shell::io::broken_pipe` / `PluginWrite could not flush`, without one word
+about versions. Compare `nu --version` against the `+nu-` metadata in `Cargo.toml`.
+
+**Run the CI gates before committing.** `cargo fmt -- --check` is a gate, not a suggestion, and
+it is the one that gets forgotten; clippy runs stricter in CI than a bare `cargo clippy` does
+locally. The three, in the form CI runs them:
+
+```bash
+cargo fmt -- --check
+cargo clippy --all-targets --locked -- -D warnings
+cargo test --locked
+```
+
+**One session per workspace.** Two agent sessions sharing a jj workspace rewrite each other's
+history. Use `jj workspace add` if a second is needed.
+
 ## Release hygiene
 
 ### The version string carries two facts
@@ -70,6 +128,15 @@ git push origin "vX.Y.Z+nu-A.B.C"
 - **The target is resolved locally.** `gh release create --target <bookmark>` resolves server-side, so it tags whatever the remote currently knows the bookmark to be — which, after a rewrite, may be the old stack. A local tag names the commit object and can be checked before it leaves.
 - **A local tag is free to delete.** Nothing is public until `git push origin <tag>`.
 7. Watch Actions — both guards validate before building.
+
+**A tag push fires two workflows, not one.** `ci.yml` triggers on every push, tags included, so
+each tag produces a `Release` run *and* a `CI` run. Watching only the release runs can report
+green while `fmt`/`clippy`/`test` is red on the same tag — and watching only by run id, as
+`gh run watch` does, silently omits the other. List by tag instead:
+
+```bash
+gh run list --branch "vX.Y.Z+nu-A.B.C"
+```
 
 ### One release, one variant per supported Nushell minor
 
