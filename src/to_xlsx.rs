@@ -200,8 +200,7 @@ pub(crate) fn write_workbook(
             worksheet
                 .set_column_width(col as u16, date_column_width())
                 .map_err(|e| {
-                    LabeledError::new("Failed to set column width")
-                        .with_label(e.to_string(), span)
+                    LabeledError::new("Failed to set column width").with_label(e.to_string(), span)
                 })?;
         }
 
