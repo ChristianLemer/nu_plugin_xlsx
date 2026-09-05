@@ -44,8 +44,15 @@ def main [
 
     # One release per Nushell minor, so the newest release is almost never the
     # right one. Every release has to be searched, not just `latest`.
+    # Unauthenticated, the API allows 60 calls an hour per address — shared
+    # runners and offices behind one NAT run out. A token lifts that. Only the
+    # API call carries it: the download URLs redirect to signed storage, which
+    # rejects a request that arrives with an Authorization header.
+    let auth = if ($env.GITHUB_TOKEN? | default "" | is-empty) { [] } else {
+      [Authorization $"Bearer ($env.GITHUB_TOKEN)"]
+    }
     let assets = (
-      http get $"https://api.github.com/repos/($repo)/releases"
+      http get --headers $auth $"https://api.github.com/repos/($repo)/releases?per_page=100"
       | each {|r| $r.assets | each {|a| {tag: $r.tag_name, name: $a.name, url: $a.browser_download_url}}}
       | flatten
     )
@@ -66,15 +73,18 @@ def main [
       }
     }
 
-    let asset = ($hit | last)
+    # $hit is ordered by target preference, then newest release first, as the
+    # API returns them — so the first match is the right one on both axes.
+    let asset = ($hit | first)
     print $"Found  ($asset.name)  [($asset.tag)]"
-    if $dry_run { print $"(dry-run) would install ($bin)"; return {asset: $asset.name, dest: $bin} }
+    if $dry_run { print $"\(dry-run) would install ($bin)"; return {asset: $asset.name, dest: $bin} }
 
     let tmp = ($nu.temp-dir | path join $asset.name)
     http get $asset.url | save --force --raw $tmp
     let sum = ($assets | where name == $"($asset.name).sha256")
     if not ($sum | is-empty) {
-      let want = (http get ($sum | first | get url) | str trim | split row " " | first)
+      # GitHub serves the .sha256 as binary; decode before treating it as text.
+      let want = (http get ($sum | first | get url) | decode utf-8 | str trim | split row " " | first)
       if $want != (open --raw $tmp | hash sha256) {
         error make {msg: $"Checksum mismatch for ($asset.name) — refusing to install."}
       }
@@ -83,12 +93,14 @@ def main [
     $tmp
   }
 
-  if $dry_run { print $"(dry-run) would install ($bin)"; return {dest: $bin} }
+  if $dry_run { print $"\(dry-run) would install ($bin)"; return {dest: $bin} }
 
   mkdir $dest
   # `tar -xf` detects gzip and zip alike, including the bsdtar shipped with
-  # Windows 10+. One extraction path, no per-platform branch.
-  ^tar -xf $file -C $dest
+  # Windows 10+ — which has to be named by full path: under Git Bash or MSYS a
+  # GNU tar shadows it on PATH, and GNU tar cannot read a zip.
+  let tar = if $os.name == "windows" { $env.SystemRoot | path join System32 tar.exe } else { "tar" }
+  ^$tar -xf $file -C $dest
   if $archive == null { rm --force $file }
 
   # Keep a copy beside the binary: re-running after a Nushell upgrade is then a
