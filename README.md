@@ -1,6 +1,40 @@
 # nu_plugin_xlsx
 
-A Nushell plugin for writing Excel (.xlsx) files. Outputs real Excel Table objects with auto-filter, banded rows, and autofit by default.
+**Any Nushell table, straight into a spreadsheet that opens looking finished.**
+
+```nushell
+ls | save files.xlsx
+```
+
+That is the whole API. No flags, no schema, no template. And what lands in Excel is not a
+CSV with a new suffix: it is a real Excel Table — filter buttons on the header, banded rows,
+columns sized to their content, dates Excel knows are dates, numbers it can sum. Your
+colleague opens it and starts sorting.
+
+Nushell already reads spreadsheets with `from xlsx`. This is the other half.
+
+## What it does
+
+- **One line per workbook.** `save` sees the `.xlsx` extension and calls `to xlsx` for you.
+- **One sheet per key.** Pipe a record of tables; each key becomes a named sheet, in order.
+- **Types survive.** Integers, floats, booleans, real dates. File sizes land as bytes,
+  durations as seconds, `null` as an empty cell. Lists and records are written as text.
+- **A Table, not a range.** Auto-filter, banded rows, autofit — pivot-ready on arrival.
+  `--raw` gives plain cells if that is what you want.
+- **Anything Nushell can tabulate.** `ls`, `ps`, `http get`, `open data.json`, a database
+  query. If it is a table, it is a sheet.
+
+```nushell
+# Two sheets, one line
+{ Files: (ls), Processes: (ps | first 20) } | save snapshot.xlsx
+
+# A report from an API
+let orders = http get https://api.example.com/orders
+{ Orders: $orders, Customers: ($orders | select customer email | uniq) } | save report.xlsx
+
+# Bytes go wherever bytes go
+ls | to xlsx | http post https://example.com/upload
+```
 
 ## Install
 
@@ -9,30 +43,26 @@ http get https://raw.githubusercontent.com/ChristianLemer/nu_plugin_xlsx/HEAD/in
 nu install.nu --register
 ```
 
-That is all. The installer reads the Nushell running it, picks the matching build,
-verifies its checksum and registers it. No Rust toolchain.
+The installer reads the Nushell running it, downloads the matching build, verifies its
+checksum and registers it. No Rust toolchain. Then add `plugin use xlsx` to your config so
+the command survives a restart — `plugin add` registers, it does not load.
 
-Then add `plugin use xlsx` to your config, so the commands survive a restart —
-`plugin add` only writes the registry, it doesn't load anything into scope.
+Builds exist for the current Nushell minor and the two before it — the exact list is
+[supported-nu.txt](supported-nu.txt). Check yours with `version | get version`.
 
-> **Re-run the installer after every Nushell upgrade.** A plugin binary loads into
-> exactly one Nushell minor: the protocol version is a compile-time constant, so
-> every minor is a hard break and no binary serves two. Upgrading Nushell silently
-> stops every plugin from loading.
->
-> The failure names nothing useful — `plugin add` reports
-> `nu::shell::io::broken_pipe` / `PluginWrite could not flush`, never a word about
-> versions. If you see that, it is a version mismatch. The installer keeps a copy of
-> itself beside the binary, so re-running is local:
+> **Re-run the installer after every Nushell upgrade.** A plugin binary loads into exactly
+> one Nushell minor, and the failure when it does not is mute: `plugin add` reports
+> `Failed to send plugin call` or `nu::shell::io::broken_pipe`, never a version. The
+> installer keeps a copy of itself beside the binary, so re-running is local:
 >
 > ```nushell
 > nu ($nu.data-dir | path join plugins install.nu) --register
 > ```
 
-### Install from a release download
+<details>
+<summary><b>Install by hand from a release download</b></summary>
 
-If you would rather do it by hand. Assets on
-[Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases) are named
+Assets on [Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases) are named
 `nu_plugin_xlsx-nu<nu-version>-<target>.tar.gz` (`.zip` on Windows), one per platform:
 
 | Target | For |
@@ -42,10 +72,9 @@ If you would rather do it by hand. Assets on
 | `x86_64-apple-darwin` | Intel Mac |
 | `x86_64-pc-windows-msvc` | Windows |
 
-Pick the one whose `nu<nu-version>` matches yours — check with `version | get version`.
-
-Extract it — the binary inside is already named `nu_plugin_xlsx`, which matters because Nushell
-refuses to register a file whose name doesn't start with `nu_plugin_`:
+Pick the one whose `nu<nu-version>` matches yours. Extract it — the binary inside is already
+named `nu_plugin_xlsx`, which matters because Nushell refuses to register a file whose name
+doesn't start with `nu_plugin_`:
 
 ```nushell
 tar xzf nu_plugin_xlsx-nu0.115.1-x86_64-unknown-linux-musl.tar.gz
@@ -66,7 +95,10 @@ plugin use xlsx
 
 Each asset ships a `.sha256` beside it if you want to verify the download.
 
-### Install from crates.io
+</details>
+
+<details>
+<summary><b>Install from crates.io</b></summary>
 
 Only if you have Rust and want to build against your own Nushell.
 
@@ -82,52 +114,66 @@ it targets. On Nushell 0.113 you would get the 0.115 build, which cannot load.
 To build from source for your own Nushell, check out the tag whose `+nu-` matches it
 and `cargo install --path .` from there.
 
-## Usage
+</details>
+
+<details>
+<summary><b>Uninstall</b></summary>
 
 ```nushell
-# Simplest — save detects the .xlsx extension and calls `to xlsx` for you
-ls | save files.xlsx
-
-# Explicit conversion (also works — binary input is passed through)
-ls | to xlsx | save files.xlsx
-
-# Multi-sheet workbook
-{ Users: $users, Orders: $orders } | save report.xlsx
-
-# Plain cells (no Excel Table formatting)
-ls | to xlsx --raw | save files.xlsx
+plugin rm xlsx
 ```
 
-> **Note:** Nushell's `save` command automatically invokes `to xlsx` when the file extension is `.xlsx`. You don't need to call `to xlsx` explicitly unless you want to use flags like `--raw` or pipe the binary elsewhere (e.g. `to xlsx | http post`).
+Then delete the binary the installer put in `$nu.data-dir | path join plugins`, and drop
+`plugin use xlsx` from your config.
 
-### Reading back xlsx files
+</details>
 
-When reading back with the core `from xlsx`, the header row is returned as a data row. Pipe through `headers` to promote it:
+## Good to know
+
+**Sheet names are Excel's rules, not ours.** At most 31 characters, not empty, none of
+`[ ] : * ? / \`, unique regardless of case. A key that breaks one fails the conversion with
+`Failed to set sheet name`; rename the key first:
 
 ```nushell
-open report.xlsx | get Sheet1 | headers
+$report | rename --column { "Q1/Q2 2024": "Q1-Q2 2024" } | save report.xlsx
 ```
 
-## Test
+**Reading it back needs no plugin.** Nushell's own `from xlsx` does it, first row as column
+names. Excel stores every number as a float, so `30` comes back as `30.00` unless you ask
+(the flag exists from Nushell 0.114):
+
+```nushell
+open --raw report.xlsx | from xlsx --prefer-integers | get Orders
+```
+
+**An empty table is still a workbook**, with an empty `Sheet1`. Its column names cannot
+survive: an empty table carries no schema in Nushell, so there is nothing to write.
+
+**A row missing a column** that other rows have gets an empty cell there.
+
+## When it goes wrong
+
+| You see | It means | Do |
+| --- | --- | --- |
+| `Failed to send plugin call`, `broken_pipe` | binary built for another Nushell minor | re-run the installer |
+| `Failed to set sheet name` | a key breaks a sheet-name rule | rename the key, see above |
+| `Command does not support binary input` | xlsx bytes reached `to xlsx` twice | drop the extra `to xlsx` |
+| commands gone after restart | registered, not loaded | `plugin use xlsx` in your config |
+
+## Contributing
+
+The gates CI runs, plus the check that one source tree still serves every supported
+Nushell minor:
 
 ```bash
-cargo test
-cargo clippy
+cargo fmt -- --check
+cargo clippy --all-targets --locked -- -D warnings
+cargo test --locked
+./scripts/test-nu-compat.sh --all
 ```
 
-Tests use `calamine` (dev dependency) to read back the generated xlsx and verify:
-
-| Test                                  | What it checks                                         |
-| ------------------------------------- | ------------------------------------------------------ |
-| `single_table_creates_sheet1`         | Table input wraps as Sheet1                            |
-| `multi_sheet_from_record`             | Record of tables creates named sheets                  |
-| `empty_table_creates_empty_sheet`     | Empty input produces a valid empty sheet               |
-| `raw_mode_no_table`                   | `--raw` flag skips Excel Table formatting              |
-| `type_mapping_values`                 | String, int, float, bool, nothing round-trip correctly |
-| `date_written_as_excel_date`          | Dates are written as real Excel dates                  |
-| `sparse_records_with_missing_columns` | Missing columns produce empty cells                    |
-| `mixed_types_in_same_column`          | Mixed types in a column are handled correctly          |
-| `rejects_non_table_input`             | Non-table input returns an error                       |
+[CLAUDE.md](CLAUDE.md) has the setup for that last one. [SPEC.md](SPEC.md) holds the design
+decisions and their reasons; read it before widening the command's surface.
 
 ## About
 
