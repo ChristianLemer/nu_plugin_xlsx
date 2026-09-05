@@ -116,6 +116,21 @@ jobs:
           fi
           echo "archive=${name}.${{ matrix.archive }}" >> "$GITHUB_OUTPUT"
 
+      # Before anything is uploaded, the archive goes through the installer and
+      # the binary it leaves behind is loaded into the Nushell it claims to
+      # target. This runs on every host in the matrix: Windows and macOS are
+      # where a break hides until a colleague reports it.
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: ${{ steps.nu.outputs.version }}
+
+      - name: Install the archive and load it
+        shell: bash
+        run: |
+          nu install.nu --archive "${{ steps.pkg.outputs.archive }}" --dir "$RUNNER_TEMP/xlsx"
+          nu --plugin-config "$RUNNER_TEMP/smoke.msgpackz" \
+             --plugins "$RUNNER_TEMP/xlsx/${{ matrix.bin }}" -- scripts/smoke.nu
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

@@ -1,0 +1,11 @@
+# Nushell versions this source tree is tested against, one per line.
+#
+# Each line is the exact nu-plugin / nu-protocol version CI repins to and the
+# exact Nushell it loads the result into — a binary serves one minor, so the
+# minors listed here are the minors a release ships a variant for.
+#
+# Read by scripts/test-nu-compat.sh and .github/workflows/ci.yml. To add or drop
+# a minor, edit this file: nothing else needs to know the list.
+0.113.1
+0.114.1
+0.115.1

@@ -53,18 +53,37 @@ never exercised. To test a fresh build, add a throwaway registry:
 nu --plugin-config /tmp/scratch.msgpackz --plugins ./target/debug/nu_plugin_xlsx
 ```
 
-**A version mismatch does not say its name.** Loading a plugin built against the wrong Nushell
-minor fails with `nu::shell::io::broken_pipe` / `PluginWrite could not flush`, without one word
-about versions. Compare `nu --version` against the `+nu-` metadata in `Cargo.toml`.
+**A version mismatch says its name only on one route.** Registering a plugin built against the
+wrong Nushell minor with `plugin add` fails as `Failed to send plugin call` or
+`nu::shell::io::broken_pipe`, without one word about versions. Loading it with `nu --plugins`
+instead names both versions. When a registration fails, compare `nu --version` against the
+`+nu-` metadata in `Cargo.toml`, or load with `--plugins` and read the message.
+
+**Test against every supported minor, not just the one on PATH.** The unit tests never start a
+Nushell, so they cannot tell whether a binary loads. `scripts/test-nu-compat.sh` can: for each
+version in `supported-nu.txt` it copies the tree under `target/nu-compat/`, repins the two
+`nu-*` crates there, builds in debug, and runs `scripts/smoke.nu` inside that exact Nushell with
+a throwaway registry. The working copy is never touched. The shells come from mise, side by
+side, and only the default is on PATH:
+
+```bash
+mise install aqua:nushell/nushell@0.113.1 aqua:nushell/nushell@0.114.1
+./scripts/test-nu-compat.sh --all        # or one: ./scripts/test-nu-compat.sh 0.114.1
+```
+
+CI runs the same script per minor on every push (`nu-compat` in `ci.yml`), and the release
+workflow runs `install.nu` plus the smoke on every packaged archive before uploading it. To
+add or drop a minor, edit `supported-nu.txt` and nothing else.
 
 **Run the CI gates before committing.** `cargo fmt -- --check` is a gate, not a suggestion, and
 it is the one that gets forgotten; clippy runs stricter in CI than a bare `cargo clippy` does
-locally. The three, in the form CI runs them:
+locally. The four, in the form CI runs them — the last one needs the mise shells above:
 
 ```bash
 cargo fmt -- --check
 cargo clippy --all-targets --locked -- -D warnings
 cargo test --locked
+./scripts/test-nu-compat.sh --all
 ```
 
 **One session per workspace.** Two agent sessions sharing a jj workspace rewrite each other's
@@ -156,7 +175,7 @@ Supporting a **new** Nushell minor when the source has not changed therefore add
 
 **crates.io holds exactly one.** It resolves by semver and ignores build metadata, so it cannot carry `0.2.1` three times. Publish the newest target there, and treat crates.io as the last install route: a user on an older Nushell who runs `cargo install` gets a binary that cannot load. GitHub releases carry the full set, and `install.nu` picks from them by reading the running Nushell.
 
-**How deep to support.** Roughly the current minor and the two before it. Distributions lag — Arch shipped 0.113 while 0.115 was current — and a shorter window leaves whole distributions with no usable binary.
+**How deep to support.** Roughly the current minor and the two before it. Distributions lag — Arch shipped 0.113 while 0.115 was current — and a shorter window leaves whole distributions with no usable binary. The actual list is `supported-nu.txt`: one exact version per minor, read by the compatibility script and by CI. Dropping a minor is a one-line commit there, and the commit message is where the reason goes.
 
 Pre-releases use `-beta.N` or `-rc.N`, and the suffix goes **before** the build metadata: `0.2.2-beta.1+nu-0.115.1`. Pick by intent — `-beta` when the release path or the packaging is what needs exercising, `-rc` when the code is believed final and only confirmation is missing. They are published to GitHub only, never to crates.io: cargo excludes pre-releases from normal resolution, so publishing them would add noise without helping anyone install, while a GitHub binary is exactly what a tester wants.
 
