@@ -23,7 +23,7 @@ impl PluginCommand for ToXlsx {
          Use --raw for plain cells.\n\n\
          Note: `save` invokes `to xlsx` automatically based on the file extension, \
          so `ls | save files.xlsx` works directly. \
-         Using `ls | to xlsx | save files.xlsx` also works (binary input is passed through)."
+         `ls | to xlsx | save files.xlsx` also works: `save` writes binary as it is."
     }
 
     fn signature(&self) -> Signature {
