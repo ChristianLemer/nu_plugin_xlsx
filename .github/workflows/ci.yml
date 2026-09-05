@@ -34,3 +34,59 @@ jobs:
         run: cargo fmt -- --check
       - run: cargo clippy --all-targets --locked -- -D warnings
       - run: cargo test --locked
+
+  # The list of supported minors lives in supported-nu.txt, nowhere else. A
+  # matrix cannot read a file, so one job turns the file into JSON for the next.
+  minors:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.list.outputs.versions }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        run: |
+          versions=$(grep -v '^#' supported-nu.txt | grep . | jq -R . | jq -sc .)
+          echo "versions=$versions" >> "$GITHUB_OUTPUT"
+          echo "Supported: $versions"
+
+  # One source tree serves every supported minor — SPEC.md promises it, and the
+  # unit tests cannot check it: they never start a Nushell. This job repins to
+  # each minor, builds, and loads the result into that exact Nushell. Linux only:
+  # the protocol does not vary by host, and the three hosts are covered above.
+  nu-compat:
+    needs: minors
+    strategy:
+      fail-fast: false
+      matrix:
+        nu: ${{ fromJSON(needs.minors.outputs.versions) }}
+    runs-on: ubuntu-latest
+    name: nu-compat (${{ matrix.nu }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: nu-${{ matrix.nu }}
+      - uses: hustcer/setup-nu@v3
+        with:
+          version: ${{ matrix.nu }}
+      - run: ./scripts/test-nu-compat.sh ${{ matrix.nu }}
+
+      # The installer against the real GitHub releases, as a colleague runs it.
+      # A minor listed before its variant is published only warns: the list
+      # leads the release by one commit, and that gap must not block it.
+      - name: Install the published build with install.nu
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if ! out=$(nu install.nu --dir "$RUNNER_TEMP/xlsx" 2>&1); then
+            echo "$out"
+            case "$out" in
+              *"No build for Nushell"*) echo "::warning::no published build for ${{ matrix.nu }} yet"; exit 0 ;;
+              *) exit 1 ;;
+            esac
+          fi
+          echo "$out"
+          nu --plugin-config "$RUNNER_TEMP/inst.msgpackz" \
+             --plugins "$RUNNER_TEMP/xlsx/nu_plugin_xlsx" -- scripts/smoke.nu

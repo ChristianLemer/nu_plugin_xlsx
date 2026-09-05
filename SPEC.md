@@ -59,12 +59,20 @@ choice, it is the protocol:
 So a binary built against one minor is refused by another, and no single binary
 can serve two.
 
-The refusal is silent about its cause, which is why the version has to be
-legible from the outside. Loading a 0.115-built binary into Nushell 0.113 gives
-only `nu::shell::io::broken_pipe` / `PluginWrite could not flush` — the plugin
-rejects the handshake and exits, and the shell reports the dead pipe. Nothing
-mentions a version. (Verified in that direction; a newer shell against an older
-plugin may report differently.)
+Whether the refusal names its cause depends on the route in, which is why the
+version has to be legible from the outside. Registering a mismatched binary
+with `plugin add` fails as `Failed to send plugin call` (or, on older shells,
+`nu::shell::io::broken_pipe` / `PluginWrite could not flush`): the plugin
+rejects the handshake and exits, and the shell reports the dead pipe, with no
+version in sight. Loading the same binary for one session with `nu --plugins`
+does name both: `compiled for nushell version 0.113.0, which is not compatible
+with version 0.115.1`. Both directions behave the same way, verified 0.113
+against 0.115 and back.
+
+The supported minors are listed in `supported-nu.txt`, one per line. CI repins
+the tree to each and loads the result into that exact Nushell
+(`scripts/test-nu-compat.sh`), so the promise below is checked on every push
+rather than asserted.
 
 **Consequence for releases.** The plugin's own semver tracks *this* project;
 the Nushell target rides in build metadata: `0.2.1+nu-0.114.1`. One release per
