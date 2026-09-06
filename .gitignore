@@ -21,8 +21,8 @@ target
 # recreated per machine; the paths differ on the Mac.
 #
 # ⚠️ NO trailing slash, deliberately. `docs/` matches a DIRECTORY only, and a symlink is
-# a file to git — with the slash the links stop being ignored, jj auto-tracks them, and
-# switching commits then deletes them from disk. `docs` matches either shape.
+# a file to git — with the slash the links stop being ignored, and the next `git add -A`
+# commits a path that exists on one machine only. `docs` matches either shape.
 docs
 meta
 

@@ -2,15 +2,24 @@
 
 Project-specific instructions for AI assistants working in this repo.
 
-## VCS: Jujutsu (jj), not plain git
+## VCS: plain git, one line of history
 
-This repo is driven by **jj**. A clone may be colocated (`.git` and `.jj` side by side) or not (`.jj/` alone, the backing git repo inside `.jj/repo/store/git/`) — `jj git clone --colocate` decides it per machine, so check before assuming.
+Plain git, driven from git worktrees (one per piece of work, which is how orca lays them out).
+No jj: an earlier incarnation of this repo used it, and any jj trace you meet is stale.
 
-- Use `jj` commands for local VCS operations (`jj st`, `jj describe`, `jj new`, `jj bookmark`, `jj git push`).
-- **Never read repository state from git.** Non-colocated, `git status` fails outright. Colocated, it answers — and the answer misleads: always *detached HEAD*, because jj keeps HEAD detached and drives the working copy itself. A succeeding `git status` is the dangerous case, since it reads like a normal git repo.
-- Default bookmark is `trunk` (matches the GitHub default branch). Verify with `jj bookmark list` before advancing.
-- Tags: jj doesn't manage tags natively. In a colocated clone, use plain `git tag` on the backing repo — see *Release hygiene* for why that beats `gh release create`.
-- `gh` CLI works normally — only the working-copy interaction differs from standard git.
+- `trunk` is the only long-lived branch and matches the GitHub default. It moves only by merging
+  a pull request whose checks are green. Never commit to it directly, never force-push it.
+- Every change, the maintainer's included, goes on a short branch named for the work
+  (`installer-checksum`, not `check-status-latest-commit`), gets a pull request, merges with a
+  **rebase** so the line stays straight, and the branch is deleted at merge. Squash only when the
+  commits carry no reasoning worth keeping — here they usually do.
+- No stale branches on the remote. A branch that is merged, or whose commit a tag already holds,
+  is deleted. Visitors read the branch list as the state of the project.
+- Tags are the releases, and they point at commits that hang off `trunk` — see *Release hygiene*.
+- **Rehearse the release without publishing:** `gh workflow run release.yml --ref <branch>` runs
+  the whole matrix, packages, installs and loads on all four hosts, and creates nothing. Do it
+  before merging anything that touches the workflows or the installer.
+- `gh` is the tool for anything on GitHub: runs, pull requests, releases.
 
 ## Setting up on a new machine
 
@@ -31,11 +40,10 @@ ln -s "$V" meta
 ln -s "$V/docs" docs
 ```
 
-⚠️ **The ignore must already be in place before the links are created**, never the reverse.
-jj auto-tracks anything not ignored, and an auto-tracked symlink is *deleted from disk* at the
-next commit switch. The ignore is committed in `.gitignore` — so on a fresh clone it is
-already there and the order takes care of itself; the trap only bites if you recreate the
-ignore by hand. See the comment in `.gitignore` for why the entries carry no trailing slash.
+Both are ignored in `.gitignore`, so `git add -A` never picks them up and a checkout never
+touches them. See the comment there for why the entries carry no trailing slash: with one, a
+symlink stops matching, and the next `git add -A` would commit a path that exists on one
+machine only.
 
 **Registering is not loading.** `plugin add` records signatures in the registry; `plugin use
 xlsx` brings the commands into scope, and only for the current session. Put `plugin use xlsx`
@@ -86,8 +94,8 @@ cargo test --locked
 ./scripts/test-nu-compat.sh --all
 ```
 
-**One session per workspace.** Two agent sessions sharing a jj workspace rewrite each other's
-history. Use `jj workspace add` if a second is needed.
+**One session per worktree.** Two agent sessions in the same worktree overwrite each other's
+working copy. A second session gets its own `git worktree add`, which is what orca does.
 
 ## Release hygiene
 
@@ -104,7 +112,7 @@ A version names **this project's maturity** *and* **which Nushell the binary loa
 
 Why the target must be stated at all: the plugin protocol version is a compile-time constant and Nushell rejects anything outside a caret match, so **every Nushell minor is a hard break** and no binary serves two. One release per Nushell minor. The reasoning is in [SPEC.md](SPEC.md#nushell-version-compatibility).
 
-Never let the Nushell version into the semver itself. `0.2.1` → `0.2.2` means our code moved; `+nu-0.114.1` → `+nu-0.115.1` means the target moved. Collapsing them makes `jj log` unreadable — you could no longer tell a new release from the same code rebuilt.
+Never let the Nushell version into the semver itself. `0.2.1` → `0.2.2` means our code moved; `+nu-0.114.1` → `+nu-0.115.1` means the target moved. Collapsing them makes `git log` unreadable — you could no longer tell a new release from the same code rebuilt.
 
 ### Three things that MUST agree before a release
 
@@ -125,28 +133,30 @@ A release cut is an **isolated "Bump" commit**: it changes the `Cargo.toml` vers
 
 **The `nu-*` pins belong in the bump, not in an infra commit.** They are not a separate decision: `+nu-0.114.1` and `=0.114.1` state one fact in two places, and splitting them would leave a commit where the guard fails by construction.
 
-Why the isolation: keeps `jj log` / `git log --grep "^Bump"` a clean timeline of every release, and lets you revert or cherry-pick a version bump without dragging unrelated changes along. Commit messages for bumps are short: `"Bump to 0.2.1+nu-0.114.1"`.
+Why the isolation: keeps `git log --grep "^Bump"` a clean timeline of every release, and lets you revert or cherry-pick a version bump without dragging unrelated changes along. Commit messages for bumps are short: `"Bump to 0.2.1+nu-0.114.1"`.
 
 **Release sequence:**
 
-1. Land all other changes first (CI tweaks, doc updates, non-`nu` dep bumps) as normal commits on `trunk`.
-2. In a fresh working-copy change, edit `Cargo.toml` only: the version (e.g. `0.2.1+nu-0.114.1`) and the two `nu-*` pins to match (`=0.114.1`). Run `cargo check` once so `Cargo.lock` updates.
-3. Verify locally before committing: `./scripts/check-nu-metadata.sh --strict`.
-4. `jj describe -m "Bump to X.Y.Z+nu-A.B.C"` and `jj new`.
-5. `jj bookmark move trunk --to @-` then `jj git push`.
-6. Tag the bump commit and push the tag — **not** `gh release create`:
+1. Land all other changes first (CI tweaks, doc updates, non-`nu` dep bumps) through pull requests on `trunk`. The commit `trunk` then sits on is the release point.
+2. Branch off it for one variant: `git switch -c bump/X.Y.Z+nu-A.B.C trunk`. Edit `Cargo.toml` only: the version (e.g. `0.2.1+nu-0.114.1`) and the two `nu-*` pins to match (`=0.114.1`). Run `cargo check` once so `Cargo.lock` updates.
+3. Verify before committing: `./scripts/check-nu-metadata.sh --strict`.
+4. `git commit -am "Bump to X.Y.Z+nu-A.B.C"`.
+5. Tag the bump commit and push the tag — **not** `gh release create`, and not the branch:
 
 ```bash
-git tag "vX.Y.Z+nu-A.B.C" <the bump commit>
+git tag "vX.Y.Z+nu-A.B.C"
 git push origin "vX.Y.Z+nu-A.B.C"
+git switch trunk && git branch -D "bump/X.Y.Z+nu-A.B.C"   # the tag holds the commit
 ```
+
+Repeat 2–5 from the same release point for each minor in `supported-nu.txt`. `trunk` never moves during a release; the variants hang off it, and only the tags reach the remote.
 
 `+` is legal in a git ref name. Three reasons the tag push wins:
 
 - **The release workflow creates the release itself**, assets attached, on `push: tags: ["v*"]`. `gh release create` would publish an empty release first and let the action fill it in afterwards — a window in which a public release has no binaries.
-- **The target is resolved locally.** `gh release create --target <bookmark>` resolves server-side, so it tags whatever the remote currently knows the bookmark to be — which, after a rewrite, may be the old stack. A local tag names the commit object and can be checked before it leaves.
+- **The target is resolved locally.** `gh release create --target <branch>` resolves server-side, so it tags whatever the remote currently knows the branch to be — which, after a rewrite, may be the old stack. A local tag names the commit object and can be checked before it leaves.
 - **A local tag is free to delete.** Nothing is public until `git push origin <tag>`.
-7. Watch Actions — both guards validate before building.
+6. Watch Actions — both guards validate before building.
 
 **A tag push fires two workflows, not one.** `ci.yml` triggers on every push, tags included, so
 each tag produces a `Release` run *and* a `CI` run. Watching only the release runs can report
@@ -195,7 +205,7 @@ Decide by **mutability**, not importance.
 - **Will be edited again** — plans, handovers, session state, brainstorm scaffolds. They live in the vault, reached through the `meta` and `docs` symlinks, and are never versioned. They are transit: superseded, then deleted.
 - **Finished when written** — a decision and its reason. Versioned, in `SPEC.md`, in the same commit as the code it justifies.
 
-Why mutability and not importance: history here gets rewritten. A document edited across many commits is dragged through every rebase and can land in a commit that predates the decision it records. A document written once beside its code moves with that code, untouched.
+Why mutability and not importance: branches here get rebased before they merge. A document edited across many commits is dragged through every rebase and can land in a commit that predates the decision it records. A document written once beside its code moves with that code, untouched.
 
 The test: if losing the vault entirely left an unanswerable "why is this code like this?", the split is wrong. Deliberation dies in the vault; the outcome lands in `SPEC.md`.
 

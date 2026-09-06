@@ -187,7 +187,7 @@ open --raw report.xlsx | from xlsx
 ```text
 nu_plugin_xlsx/
 ├── Cargo.toml
-├── CLAUDE.md                     # Working conventions: jj, release mechanics
+├── CLAUDE.md                     # Working conventions: git workflow, release mechanics
 ├── LICENSE
 ├── README.md
 ├── SPEC.md
