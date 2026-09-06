@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://docs.coderabbit.ai/coderabbit.schema.json
+#
+# Findings only. The walkthrough, the status comment and the poem are noise for
+# a visitor reading the pull request; the inline findings are what earns the
+# reviewer its place. Nothing it says is applied without being checked in a
+# running shell — on its first review here, one finding in three was wrong.
+reviews:
+  high_level_summary: false
+  review_status: false
+  poem: false
+  collapse_walkthrough: true
+  request_changes_workflow: false
+  auto_review:
+    enabled: true
