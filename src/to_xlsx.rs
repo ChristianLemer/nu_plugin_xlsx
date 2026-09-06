@@ -78,12 +78,6 @@ impl PluginCommand for ToXlsx {
         let raw = call.has_flag("raw")?;
         let input = input.into_value(span)?;
 
-        // Binary passthrough: `to xlsx | save foo.xlsx` causes save to re-invoke
-        // `to xlsx` on the already-converted binary.
-        if let Value::Binary { .. } = &input {
-            return Ok(PipelineData::Value(input, None));
-        }
-
         let sheets = match &input {
             Value::List { .. } => {
                 vec![("Sheet1".to_string(), input)]

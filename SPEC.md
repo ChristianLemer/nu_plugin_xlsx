@@ -231,7 +231,7 @@ metadata; see [Nushell version compatibility](#nushell-version-compatibility).
 
 - **Plugin trait**: `PluginCommand` with `PipelineData` — collects input via `into_value()`.
 - **Binary output**: `Value::binary(bytes, span)`.
-- **Binary passthrough**: If input is already binary, pass it through (handles `to xlsx | save foo.xlsx`).
+- **No binary passthrough**: the declared input types are table and record, so the parser rejects binary before `run` is reached. `to xlsx | save foo.xlsx` works because `save` writes binary as it is, not because the command is invoked twice.
 - **Input/output types**: Two variants — `Type::table()` (sugar) and `Type::record()` (multi-sheet). Both produce `Type::Binary`. Use the helpers, never the raw enum variants: the helpers are the API's stability surface across Nushell minors.
 - **Error handling**: `LabeledError` with `Span` from the source value.
 - **Lints**: `clippy::pedantic`, deny `unsafe_code` and `unwrap_used`.
