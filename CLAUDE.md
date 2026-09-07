@@ -2,6 +2,18 @@
 
 Project-specific instructions for AI assistants working in this repo.
 
+## Language: the repository is English
+
+**Everything the repository carries is written in English.** `README.md`, `SPEC.md`, this
+file, the code and its comments, commit messages, branch names, pull request titles and
+bodies, and any reply to an issue. The project is public and its audience is the Nushell
+community, which works in English.
+
+The maintainer and the assistant often work in French. That belongs to the conversation and
+to the notes folder, and it stops at the commit boundary. Write the English directly rather
+than drafting in French and translating: a translated commit message reads like one, and the
+reasoning is the whole point of these messages.
+
 ## VCS: plain git, one line of history
 
 Plain git, driven from git worktrees, one per piece of work. No jj: an earlier incarnation of
