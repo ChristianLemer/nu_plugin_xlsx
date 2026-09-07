@@ -4,8 +4,8 @@ Project-specific instructions for AI assistants working in this repo.
 
 ## VCS: plain git, one line of history
 
-Plain git, driven from git worktrees (one per piece of work, which is how orca lays them out).
-No jj: an earlier incarnation of this repo used it, and any jj trace you meet is stale.
+Plain git, driven from git worktrees, one per piece of work. No jj: an earlier incarnation of
+this repo used it, and any jj trace you meet is stale.
 
 - `trunk` is the only long-lived branch and matches the GitHub default. It moves only by merging
   a pull request whose checks are green. Never commit to it directly, never force-push it.
@@ -29,15 +29,16 @@ None of this travels with the clone, and each item below has cost time at least 
 metadata you intend to build against. No system packages are needed: the dependency tree
 carries no C library, so a bare `cargo build` suffices.
 
-**The `meta` and `docs` symlinks.** `meta` points at the project's folder in the Drive vault,
-`docs` at that folder's `docs/` subdirectory, where `superpowers` writes its plans and specs.
-Both are absolute, so the path differs per machine — on Linux under `~/Insync/...`, elsewhere
-wherever the vault is mounted.
+**The `meta` and `docs` symlinks.** The maintainer keeps plans, notes and specs in a folder
+outside the repository, synced between machines. `meta` points at that folder, `docs` at its
+`docs/` subdirectory. Both are absolute, so the path differs per machine. Set `V` to it, then
+check the links resolve — `ln -s` succeeds happily on a path that does not exist, and the
+failure only surfaces much later:
 
 ```bash
-V="$HOME/Insync/<account>/Google Drive/Kosmos/2. 🧠 Un Esprit Sain/Nushell XLSX Plugin"
-ln -s "$V" meta
-ln -s "$V/docs" docs
+V="$HOME/…"        # the project's notes folder on this machine
+ln -s "$V" meta && ln -s "$V/docs" docs
+ls meta/ docs/     # both must list, or the links are dangling
 ```
 
 Both are ignored in `.gitignore`, so `git add -A` never picks them up and a checkout never
@@ -95,7 +96,7 @@ cargo test --locked
 ```
 
 **One session per worktree.** Two agent sessions in the same worktree overwrite each other's
-working copy. A second session gets its own `git worktree add`, which is what orca does.
+working copy. A second session gets its own `git worktree add`.
 
 ## Release hygiene
 
@@ -202,11 +203,11 @@ The release workflow flags a prerelease by reading the **version core**, not the
 
 Decide by **mutability**, not importance.
 
-- **Will be edited again** — plans, handovers, session state, brainstorm scaffolds. They live in the vault, reached through the `meta` and `docs` symlinks, and are never versioned. They are transit: superseded, then deleted.
+- **Will be edited again** — plans, handovers, session state, brainstorm scaffolds. They live in the notes folder, reached through the `meta` and `docs` symlinks, and are never versioned. They are transit: superseded, then deleted.
 - **Finished when written** — a decision and its reason. Versioned, in `SPEC.md`, in the same commit as the code it justifies.
 
 Why mutability and not importance: branches here get rebased before they merge. A document edited across many commits is dragged through every rebase and can land in a commit that predates the decision it records. A document written once beside its code moves with that code, untouched.
 
-The test: if losing the vault entirely left an unanswerable "why is this code like this?", the split is wrong. Deliberation dies in the vault; the outcome lands in `SPEC.md`.
+The test: if losing the notes folder entirely left an unanswerable "why is this code like this?", the split is wrong. Deliberation dies in the notes; the outcome lands in `SPEC.md`.
 
 `## Open questions` in `SPEC.md` holds a question until it is settled. Settling it means moving it into the body of the spec, in the commit that implements it — never recording the answer in a plan.

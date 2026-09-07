@@ -15,10 +15,9 @@ target
 # Claude Code
 .claude/
 
-# Notes, plans and specs — they travel by Drive, never by git.
-# `meta` links to the project's shared folder, `docs` to its docs/ subfolder, where
-# superpowers writes its specs and plans. Both are machine-local absolute symlinks,
-# recreated per machine; the paths differ on the Mac.
+# Notes, plans and specs live outside the repository, never in git.
+# `meta` links to the project's notes folder, `docs` to its docs/ subfolder. Both are
+# machine-local absolute symlinks, recreated per machine.
 #
 # ⚠️ NO trailing slash, deliberately. `docs/` matches a DIRECTORY only, and a symlink is
 # a file to git — with the slash the links stop being ignored, and the next `git add -A`
