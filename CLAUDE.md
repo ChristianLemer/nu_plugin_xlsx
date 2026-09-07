@@ -21,6 +21,30 @@ this repo used it, and any jj trace you meet is stale.
   before merging anything that touches the workflows or the installer.
 - `gh` is the tool for anything on GitHub: runs, pull requests, releases.
 
+**How a change gets reviewed.**
+
+- **Review before the first push.** Run the code-review skill on the branch in a fresh context,
+  and the security review too for anything touching `install.nu` or the workflows — those run on
+  other people's machines. **Check every finding in a running shell before applying it.** An AI
+  reviewer is confidently wrong often enough to matter: of the first three findings raised here,
+  one was invalid, and applying it would have deleted a correct line. Fix what survives, tidy the
+  commits, then push once. The pull request then shows the commits and green checks, `ci` being
+  the one trunk requires.
+- **The order is review, push, rehearse, merge.** A second push is for what only the remote can
+  tell you: a CI job red on macOS or Windows, or a red release rehearsal — `gh workflow run`
+  resolves the workflow file server-side, so the branch must be pushed before it can run.
+  Nothing else earns one.
+- **Say what the review changed, not what it said.** The description is for whoever reads the
+  pull request, not a transcript: a finding you declined and why, and any question it settled.
+  A finding that settles a design question goes into `SPEC.md` as well, since a pull request
+  body is not versioned and a rebase merge leaves no commit carrying it.
+- **The review bot is off, not gone.** `.coderabbit.yaml` disables its automatic review, so it
+  says nothing unless asked. Summon it with `@coderabbitai review` on a pull request touching
+  `install.nu`, the workflows, or anything else a colleague runs: it is a different system with
+  different blind spots, and on the first pull request here it caught two things the in-session
+  review had missed. Left automatic it was worse than useless — one review an hour on the free
+  plan, so it skipped the bursts where a second look matters, and four comments per finding.
+
 ## Setting up on a new machine
 
 None of this travels with the clone, and each item below has cost time at least once.

@@ -1,21 +1,21 @@
 # yaml-language-server: $schema=https://docs.coderabbit.ai/coderabbit.schema.json
 #
-# Findings only. The walkthrough, the status comment and the poem are noise for
-# a visitor reading the pull request; the inline findings are what earns the
-# reviewer its place. Nothing it says is applied without being checked in a
-# running shell — on its first review here, one finding in three was wrong.
+# Off by default, summoned when wanted: `@coderabbitai review` on a pull request. The first
+# review of a branch happens before its first push instead — see CLAUDE.md. This bot earns its
+# place as a second opinion on a change a colleague will run, because it is a different system
+# with different blind spots.
+#
+# Deleting this file would not quiet it. The app is installed on the account, and with no
+# config it falls back to defaults noisier than anything it replaced.
 reviews:
+  auto_review:
+    enabled: false
   high_level_summary: false
   review_status: false
   poem: false
   collapse_walkthrough: true
   request_changes_workflow: false
   enable_prompt_for_ai_agents: false
-  auto_review:
-    enabled: true
 
-# It answers in a thread only when addressed. Left on, every reply to a finding
-# drew a reply back, each wrapped in an empty "reviewed" entry on the timeline:
-# thirteen bot items on the first pull request, for three findings.
 chat:
   auto_reply: false

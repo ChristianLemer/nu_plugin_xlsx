@@ -179,7 +179,7 @@ decisions and their reasons; read it before widening the command's surface.
 
 This is my first open-source project. I've been a software engineer in enterprise environments for years but hadn't published anything publicly until now.
 
-This project is developed with [Claude Code](https://claude.ai/claude-code) as a pair programming partner. Design decisions, architecture, and code review are human-driven — AI assists with implementation, research, and iteration.
+This project is developed with [Claude Code](https://claude.ai/claude-code) as a pair programming partner. Design decisions, architecture, and the call on any review finding are human-driven. AI assists with implementation, research and iteration, and reviews every branch before it becomes a pull request.
 
 ## License
 
