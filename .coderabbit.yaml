@@ -10,5 +10,12 @@ reviews:
   poem: false
   collapse_walkthrough: true
   request_changes_workflow: false
+  enable_prompt_for_ai_agents: false
   auto_review:
     enabled: true
+
+# It answers in a thread only when addressed. Left on, every reply to a finding
+# drew a reply back, each wrapped in an empty "reviewed" entry on the timeline:
+# thirteen bot items on the first pull request, for three findings.
+chat:
+  auto_reply: false
