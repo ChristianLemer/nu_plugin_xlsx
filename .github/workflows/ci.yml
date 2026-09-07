@@ -1,9 +1,14 @@
 name: CI
 
+# One run per event, not two: a push to a pull-request branch used to fire on
+# the push and again on the pull request. Tags keep their run, since a tag
+# push also has to be seen green (see CLAUDE.md, "A tag push fires two
+# workflows").
 on:
   push:
-  pull_request:
     branches: [trunk]
+    tags: ["v*"]
+  pull_request:
 
 env:
   CARGO_TERM_COLOR: always
@@ -90,3 +95,14 @@ jobs:
           echo "$out"
           nu --plugin-config "$RUNNER_TEMP/inst.msgpackz" \
              --plugins "$RUNNER_TEMP/xlsx/nu_plugin_xlsx" -- scripts/smoke.nu
+
+  # The one check trunk requires. Matrix job names change whenever a minor is
+  # added or dropped; this name does not, so the branch rule points here.
+  ci:
+    needs: [check, nu-compat]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "check=${{ needs.check.result }} nu-compat=${{ needs.nu-compat.result }}"
+          [ "${{ needs.check.result }}" = success ] && [ "${{ needs.nu-compat.result }}" = success ]
