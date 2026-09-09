@@ -88,7 +88,11 @@ jobs:
           if ! out=$(nu install.nu --dir "$RUNNER_TEMP/xlsx" 2>&1); then
             echo "$out"
             case "$out" in
-              *"No build for Nushell"*) echo "::warning::no published build for ${{ matrix.nu }} yet"; exit 0 ;;
+              # Matches both installer refusals: no build for this Nushell minor,
+              # and no build for this architecture. The second is unreachable
+              # while this job runs on x86 Linux only, and is the failure an ARM
+              # leg would hit before the first release carrying an ARM archive.
+              *"No build for"*) echo "::warning::no published build yet for ${{ matrix.nu }} on this host"; exit 0 ;;
               *) exit 1 ;;
             esac
           fi
