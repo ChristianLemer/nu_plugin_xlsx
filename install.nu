@@ -62,14 +62,29 @@ def main [
       } | flatten)
 
     if ($hit | is-empty) {
-      let have = ($assets | get name | parse --regex 'nu(?<v>\d+\.\d+)\.' | get v | uniq | sort)
+      # Two different failures, and they need different answers. The
+      # architecture may have no build at all, or only this Nushell minor may
+      # be missing for it. Telling someone on an unbuilt architecture to
+      # upgrade Nushell sends them to fix what is not broken.
+      let for_platform = ($targets | each {|t|
+          $assets | where name =~ ('-' + $t + '\.(tar\.gz|zip)$')
+        } | flatten)
+      if ($for_platform | is-empty) {
+        let built = ($assets | get name
+          | parse --regex '-nu[0-9.]+-(?<t>.+)\.(?:tar\.gz|zip)$' | get t | uniq | sort)
+        error make {
+          msg: (if ($built | is-empty) {
+            $"No archives published under this naming scheme in ($repo)."
+          } else {
+            $"No build for ($key). Built: ($built | str join ', ')."
+          })
+          help: "Build from source: check out the tag whose +nu- matches your Nushell, then `cargo install --path .`."
+        }
+      }
+      let have = ($for_platform | get name | parse --regex 'nu(?<v>\d+\.\d+)\.' | get v | uniq | sort)
       error make {
-        msg: (if ($have | is-empty) {
-          $"No archives published under this naming scheme in ($repo)."
-        } else {
-          $"No build for Nushell ($minor). Available: ($have | str join ', ')."
-        })
-        help: "Upgrade Nushell, or build from the tag matching your version."
+        msg: $"No build for Nushell ($minor) on ($key). Available: ($have | str join ', ')."
+        help: "Upgrade or downgrade Nushell to one of those, or build from the tag matching your version."
       }
     }
 
