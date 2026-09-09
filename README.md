@@ -67,7 +67,8 @@ Assets on [Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases) 
 
 | Target | For |
 | --- | --- |
-| `x86_64-unknown-linux-musl` | any Linux — statically linked, no glibc requirement |
+| `x86_64-unknown-linux-musl` | any Linux on Intel or AMD — statically linked, no glibc requirement |
+| `aarch64-unknown-linux-musl` | any Linux on ARM — a Raspberry Pi, an ARM server or cloud instance (from the next release) |
 | `aarch64-apple-darwin` | Apple Silicon |
 | `x86_64-apple-darwin` | Intel Mac |
 | `x86_64-pc-windows-msvc` | Windows |

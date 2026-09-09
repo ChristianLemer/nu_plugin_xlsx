@@ -17,7 +17,7 @@ No jj: an earlier incarnation of this repo used it, and any jj trace you meet is
   is deleted. Visitors read the branch list as the state of the project.
 - Tags are the releases, and they point at commits that hang off `trunk` — see *Release hygiene*.
 - **Rehearse the release without publishing:** `gh workflow run release.yml --ref <branch>` runs
-  the whole matrix, packages, installs and loads on all four hosts, and creates nothing. Do it
+  the whole matrix, packages, installs and loads on every host, and creates nothing. Do it
   before merging anything that touches the workflows or the installer.
 - `gh` is the tool for anything on GitHub: runs, pull requests, releases.
 
