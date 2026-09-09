@@ -75,7 +75,14 @@ jobs:
       - uses: hustcer/setup-nu@v3
         with:
           version: ${{ matrix.nu }}
-      - run: ./scripts/test-nu-compat.sh ${{ matrix.nu }}
+      # The version comes from supported-nu.txt, a file in the repository, so it
+      # reaches the shell through the environment rather than being pasted into
+      # the script text. Not `NU`: test-nu-compat.sh reads that as the path to a
+      # Nushell binary, and a version string there sends it looking for a shell
+      # that does not exist.
+      - run: ./scripts/test-nu-compat.sh "$NU_VERSION"
+        env:
+          NU_VERSION: ${{ matrix.nu }}
 
       # The installer against the real GitHub releases, as a colleague runs it.
       # A minor listed before its variant is published only warns: the list
@@ -84,6 +91,7 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          NU_VERSION: ${{ matrix.nu }}
         run: |
           if ! out=$(nu install.nu --dir "$RUNNER_TEMP/xlsx" 2>&1); then
             echo "$out"
@@ -92,7 +100,7 @@ jobs:
               # and no build for this architecture. The second is unreachable
               # while this job runs on x86 Linux only, and is the failure an ARM
               # leg would hit before the first release carrying an ARM archive.
-              *"No build for"*) echo "::warning::no published build yet for ${{ matrix.nu }} on this host"; exit 0 ;;
+              *"No build for"*) echo "::warning::no published build yet for $NU_VERSION on this host"; exit 0 ;;
               *) exit 1 ;;
             esac
           fi
