@@ -42,6 +42,9 @@ jobs:
   build:
     needs: test
     strategy:
+      # One leg must not cancel the others. A tag push that got four platforms
+      # built should not start from zero because the fifth runner was starved.
+      fail-fast: false
       matrix:
         include:
           # Static musl: one Linux artifact that runs on any distro — Arch,
@@ -50,6 +53,16 @@ jobs:
           # dependency tree has no C libraries, just libc bindings.
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
+            bin: nu_plugin_xlsx
+            archive: tar.gz
+          # ARM Linux on a native ARM runner, free for public repositories.
+          # Cross-compiling it from x86 would be simpler to configure and would
+          # cost the thing that matters here: the job below installs and loads
+          # what it just built, and a cross-built binary cannot run on its
+          # builder. Nushell's own downloads put ARM Linux at eighteen times
+          # the demand of Intel macOS, which this matrix already covers.
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
             bin: nu_plugin_xlsx
             archive: tar.gz
           - os: macos-latest
