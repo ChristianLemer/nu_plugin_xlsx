@@ -115,7 +115,19 @@ def main [
   # Windows 10+ — which has to be named by full path: under Git Bash or MSYS a
   # GNU tar shadows it on PATH, and GNU tar cannot read a zip.
   let tar = if $os.name == "windows" { $env.SystemRoot | path join System32 tar.exe } else { "tar" }
-  ^$tar -xf $file -C $dest
+  # The archive also carries LICENSE and README.md. They belong to the download,
+  # not to a plugins directory shared with every other plugin, so the extraction
+  # is staged and only the binary moves. Extracting one member by name would be
+  # shorter and is not portable: the GNU tar on many Linux boxes cannot read a
+  # zip at all, let alone select from one.
+  # Unique per run. A fixed name under a shared temp directory is another
+  # user's directory on a multi-user box, where removing it fails under the
+  # sticky bit, and it is a race between two runs of this script.
+  let stage = ($nu.temp-dir | path join $"nu_plugin_xlsx-(random chars --length 8)")
+  mkdir $stage
+  ^$tar -xf $file -C $stage
+  mv ($stage | path join $exe) $bin
+  rm --recursive --force $stage
   if $archive == null { rm --force $file }
 
   # Keep a copy beside the binary: re-running after a Nushell upgrade is then a

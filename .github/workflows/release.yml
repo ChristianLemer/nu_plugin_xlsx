@@ -121,12 +121,20 @@ jobs:
           name="nu_plugin_xlsx-nu${{ steps.nu.outputs.version }}-${{ matrix.target }}"
           mkdir -p dist
           cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "dist/${{ matrix.bin }}"
+          # MIT requires the licence text to travel with the copies. A binary
+          # alone states neither what it is nor on what terms, which is exactly
+          # the question asked of a download six months later.
+          cp LICENSE README.md dist/
           cd dist
+          # Named explicitly rather than globbing the directory: a missing file
+          # then fails the job instead of shipping a quieter archive.
           if [ "${{ matrix.archive }}" = "zip" ]; then
-            7z a "../${name}.zip" "${{ matrix.bin }}"
+            7z a "../${name}.zip" "${{ matrix.bin }}" LICENSE README.md
           else
-            tar czf "../${name}.tar.gz" "${{ matrix.bin }}"
+            tar czf "../${name}.tar.gz" "${{ matrix.bin }}" LICENSE README.md
           fi
+          echo "Archive contains:"
+          if [ "${{ matrix.archive }}" = "zip" ]; then 7z l "../${name}.zip"; else tar tzf "../${name}.tar.gz"; fi
           echo "archive=${name}.${{ matrix.archive }}" >> "$GITHUB_OUTPUT"
 
       # Before anything is uploaded, the archive goes through the installer and
