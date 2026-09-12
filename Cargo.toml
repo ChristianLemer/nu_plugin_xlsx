@@ -8,6 +8,17 @@ readme = "README.md"
 repository = "https://github.com/ChristianLemer/nu_plugin_xlsx"
 keywords = ["nushell", "plugin", "xlsx", "excel"]
 categories = ["command-line-utilities"]
+# What a `cargo install` user needs is the source, the manifest, the licence and
+# the two documents that explain the thing. The rest is how this repository is
+# run, and shipping it to every installer is noise.
+exclude = [
+  ".github/",
+  ".coderabbit.yaml",
+  ".gitignore",
+  "CLAUDE.md",
+  "scripts/",
+  "*.code-workspace",
+]
 
 [dependencies]
 nu-plugin = "0.113.0"
