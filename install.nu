@@ -5,7 +5,7 @@
 # coupling: the `+nu-0.115.1` build metadata is ignored by cargo for resolution.
 # So this script resolves the selection itself, from the version executing it.
 #
-#   http get https://raw.githubusercontent.com/ChristianLemer/nu_plugin_xlsx/HEAD/install.nu | save -f install.nu
+#   http get https://github.com/ChristianLemer/nu_plugin_xlsx/raw/HEAD/install.nu | save -f install.nu
 #   nu install.nu --register
 #
 # Re-run it after every Nushell upgrade — that is when plugins silently stop loading.
