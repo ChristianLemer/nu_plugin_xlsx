@@ -50,6 +50,12 @@ the command survives a restart — `plugin add` registers, it does not load.
 Builds exist for the current Nushell minor and the two before it — the exact list is
 [supported-nu.txt](supported-nu.txt). Check yours with `version | get version`.
 
+> **Arrived from crates.io?** Only one build is published there, the one targeting the newest
+> supported Nushell, because cargo ignores the `+nu-` part of a version when it resolves. Every
+> target lives on [Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases), and the
+> installer above picks the one matching the Nushell you are running. `cargo install` is the
+> right route only when that newest version is also yours.
+
 > **Re-run the installer after every Nushell upgrade.** A plugin binary loads into exactly
 > one Nushell minor, and the failure when it does not is mute: `plugin add` reports
 > `Failed to send plugin call` or `nu::shell::io::broken_pipe`, never a version. The
