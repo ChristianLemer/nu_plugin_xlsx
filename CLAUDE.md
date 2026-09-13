@@ -61,7 +61,8 @@ this repo used it, and any jj trace you meet is stale.
 
 None of this travels with the clone, and each item below has cost time at least once.
 
-**Toolchain.** Rust stable, edition 2021, plus a Nushell whose minor matches the `+nu-`
+**Toolchain.** Rust stable 1.88 or newer (`rust-version` in `Cargo.toml` states it: the
+spreadsheet library's zip layer sets the floor), edition 2021, plus a Nushell whose minor matches the `+nu-`
 metadata you intend to build against. No system packages are needed: the dependency tree
 carries no C library, so a bare `cargo build` suffices.
 
