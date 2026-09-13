@@ -30,7 +30,8 @@ Nushell already reads spreadsheets with `from xlsx`. This is the other half.
 
 # A report from an API
 let orders = http get https://api.example.com/orders
-{ Orders: $orders, Customers: ($orders | select customer email | uniq) } | save report.xlsx
+let clients = ($orders | select customer email | uniq)
+{ Orders: $orders, Customers: $clients } | save report.xlsx
 
 # Bytes go wherever bytes go
 ls | to xlsx | http post https://example.com/upload
@@ -39,7 +40,8 @@ ls | to xlsx | http post https://example.com/upload
 ## Install
 
 ```nushell
-http get https://raw.githubusercontent.com/ChristianLemer/nu_plugin_xlsx/HEAD/install.nu | save -f install.nu
+http get https://github.com/ChristianLemer/nu_plugin_xlsx/raw/HEAD/install.nu
+| save -f install.nu
 nu install.nu --register
 ```
 
@@ -73,8 +75,8 @@ Assets on [Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases) 
 
 | Target | For |
 | --- | --- |
-| `x86_64-unknown-linux-musl` | any Linux on Intel or AMD — statically linked, no glibc requirement |
-| `aarch64-unknown-linux-musl` | any Linux on ARM — a Raspberry Pi, an ARM server or cloud instance |
+| `x86_64-unknown-linux-musl` | any Linux on Intel or AMD, statically linked |
+| `aarch64-unknown-linux-musl` | any Linux on ARM: a Pi, a server, a cloud instance |
 | `aarch64-apple-darwin` | Apple Silicon |
 | `x86_64-apple-darwin` | Intel Mac |
 | `x86_64-pc-windows-msvc` | Windows |
@@ -170,9 +172,9 @@ survive: an empty table carries no schema in Nushell, so there is nothing to wri
 
 | You see | It means | Do |
 | --- | --- | --- |
-| `Failed to send plugin call`, `broken_pipe` | binary built for another Nushell minor | re-run the installer |
-| `Invalid sheet name`, `Duplicate sheet name` | a key breaks an Excel rule, named in the message | rename the key, see above |
-| `Command does not support binary input` | xlsx bytes reached `to xlsx` twice | drop the extra `to xlsx` |
+| `Failed to send plugin call` | built for another Nushell minor | re-run the installer |
+| `Invalid sheet name` | a key breaks an Excel rule | rename the key, see above |
+| `does not support binary input` | xlsx bytes reached `to xlsx` twice | drop the extra one |
 | commands gone after restart | registered, not loaded | `plugin use xlsx` in your config |
 
 ## Contributing
