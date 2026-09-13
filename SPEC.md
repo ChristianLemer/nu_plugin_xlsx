@@ -258,10 +258,9 @@ metadata; see [Nushell version compatibility](#nushell-version-compatibility).
 
       Adding a flag widens the command surface, so this is a design call, not
       an implementation detail.
-- [ ] Should releases cover Windows on ARM? Five targets are built, and ship
-      from the next tag: Linux on x86 and ARM (static musl, so any
-      distribution), macOS on both architectures, and Windows on x86. Releases
-      published so far carry the four that predate the ARM Linux leg. Of what remains, Nushell's own
+- [ ] Should releases cover Windows on ARM? Five targets ship as of 0.3.0:
+      Linux on x86 and ARM (static musl, so any distribution), macOS on both
+      architectures, and Windows on x86. Of what remains, Nushell's own
       0.115.1 downloads put Windows ARM at 153, level with the Intel macOS
       build already shipped, while armv7, RISC-V and LoongArch draw under 200
       between them. The question is whether a target can be added without

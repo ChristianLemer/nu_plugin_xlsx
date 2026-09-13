@@ -68,12 +68,12 @@ Assets on [Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases) 
 | Target | For |
 | --- | --- |
 | `x86_64-unknown-linux-musl` | any Linux on Intel or AMD — statically linked, no glibc requirement |
-| `aarch64-unknown-linux-musl` | any Linux on ARM — a Raspberry Pi, an ARM server or cloud instance (from the next release) |
+| `aarch64-unknown-linux-musl` | any Linux on ARM — a Raspberry Pi, an ARM server or cloud instance |
 | `aarch64-apple-darwin` | Apple Silicon |
 | `x86_64-apple-darwin` | Intel Mac |
 | `x86_64-pc-windows-msvc` | Windows |
 
-Pick the one whose `nu<nu-version>` matches yours. Extract it — the binary inside is already
+Pick the one whose `nu<nu-version>` matches yours. Releases before 0.3.0 carry no ARM Linux build. Extract it — the binary inside is already
 named `nu_plugin_xlsx`, which matters because Nushell refuses to register a file whose name
 doesn't start with `nu_plugin_`:
 
