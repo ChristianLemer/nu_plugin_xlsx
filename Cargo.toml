@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_xlsx"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 # rust_xlsxwriter 0.99 pulls zip 8, which requires 1.88. Declared so cargo says
 # so plainly, instead of failing deep inside a dependency — this project exists

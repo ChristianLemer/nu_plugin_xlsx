@@ -165,6 +165,32 @@ CI enforces all three in [.github/workflows/release.yml](.github/workflows/relea
 
 The second guard runs `--strict` at release and lax on CI — absent metadata only warns there, because an infra commit legitimately lands before the bump commit that restates the target.
 
+**`trunk` carries the plain version, the variants add the metadata and the pins.**
+
+`trunk`'s `Cargo.toml` holds the semver alone — `0.3.0`, never `0.3.0+nu-0.115.1`. It is the
+*version string* that commits to no Nushell minor. The `nu-*` ranges on trunk still resolve to
+one, because a caret on a `0.x` crate means `>=0.113.0, <0.114.0`: they are trunk's default for
+a local `cargo build`, not a promise. What makes one source serve every supported minor is
+`scripts/test-nu-compat.sh`, which repins a copy per minor, and the bump commits, which carry
+the exact pins that ship.
+
+So a bump commit adds exactly two things:
+
+```
+-version = "0.3.0"             -nu-plugin = "0.113.0"
++version = "0.3.0+nu-0.115.1"  +nu-plugin = "=0.115.1"
+```
+
+the metadata naming the target, and the exact pin that is the contract.
+
+Update the version on `trunk` in its own pull request **before** cutting, not after. Doing it
+after leaves a window where `trunk` names the previous release, and it costs a second commit.
+
+This rule was written late. From May until September `trunk` sat at `0.2.0` while `0.2.1`
+shipped in three variants, so the field had drifted two releases behind and the next cut would
+have read `0.2.0 → 0.3.0`. Nothing was broken by it — the tags were always right — but a
+version field that no longer matches anything misleads whoever reads it next.
+
 **Commit convention for releases:**
 
 A release cut is an **isolated "Bump" commit**: it changes the `Cargo.toml` version string, the two `nu-*` exact pins, and the cascading `Cargo.lock` — nothing else. Any other change — CI, docs, non-`nu` deps, CLAUDE.md — goes in its *own* commit that lands before the bump. The tag points at the pure-bump commit.
@@ -175,7 +201,7 @@ Why the isolation: keeps `git log --grep "^Bump"` a clean timeline of every rele
 
 **Release sequence:**
 
-1. Land all other changes first (CI tweaks, doc updates, non-`nu` dep bumps) through pull requests on `trunk`. The commit `trunk` then sits on is the release point.
+1. Land all other changes first (CI tweaks, doc updates, non-`nu` dep bumps) through pull requests on `trunk`, and in the last of them set `trunk`'s version to the one being released. The commit `trunk` then sits on is the release point.
 2. Branch off it for one variant: `git switch -c bump/X.Y.Z+nu-A.B.C trunk`. Edit `Cargo.toml` only: the version (e.g. `0.2.1+nu-0.114.1`) and the two `nu-*` pins to match (`=0.114.1`). Run `cargo check` once so `Cargo.lock` updates.
 3. Verify before committing: `./scripts/check-nu-metadata.sh --strict`.
 4. `git commit -am "Bump to X.Y.Z+nu-A.B.C"`.
