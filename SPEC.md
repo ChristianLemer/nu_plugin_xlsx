@@ -38,7 +38,7 @@ If [nushell#16711](https://github.com/nushell/nushell/issues/16711) lands and `f
 | ---------------------------------------------- | ----------------- | ------------------------------------ |
 | `nu-plugin`                                    | pinned exactly    | Nushell plugin protocol              |
 | `nu-protocol`                                  | pinned exactly    | Nushell types (`Value`, `Span`, etc) |
-| `rust_xlsxwriter` (features: `chrono`, `ryu`)  | `0.82`            | Write .xlsx files                    |
+| `rust_xlsxwriter` (features: `chrono`, `zmij`) | `0.99`            | Write .xlsx files                    |
 | `chrono`                                       | `0.4`             | Date/time mapping                    |
 
 The two `nu-*` crates are pinned to an exact version (`=0.115.1`, not `0.115`)
