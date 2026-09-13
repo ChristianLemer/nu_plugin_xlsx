@@ -146,8 +146,21 @@ rather than assumed:
    marks its dataframe field `#[serde(skip)]`, so only a `Uuid` is transported
    and the data stays in the polars plugin's own process cache.
 
-So the schema can only ever come from the caller. Accepting it is a surface
-decision, not an implementation one — see [Open questions](#open-questions).
+So the schema can only ever come from the caller. **Settled: the command does
+not take one.** A `--columns` flag was considered and rejected, because the
+caller can already express the same file without it:
+
+```nushell
+if ($data | is-empty) { [[a b]; [null null]] } else { $data } | save out.xlsx
+```
+
+That writes the headers and a real Excel Table with `ref="A1:B2"` — the header
+row plus the reserved row constraint 2 forces on any Table. It is byte for byte
+what the flag would have produced, so the flag would only have been sugar, paid
+for with a wider command surface and two design forks with no neutral answer.
+
+Where the schema comes from is the caller's business either way; a flag would
+merely change the spelling.
 
 ### Flags
 
@@ -243,21 +256,6 @@ metadata; see [Nushell version compatibility](#nushell-version-compatibility).
 ## Open questions
 
 - [ ] Which `rust_xlsxwriter` Table style to use as default?
-- [ ] **Should `to xlsx` accept a caller-supplied schema for empty input?**
-      Users ask for the header row to survive an empty dataset. Since the
-      schema cannot arrive with the value ([Empty input](#empty-input)), the
-      only way is a flag — `--columns [a b]`. Two sub-decisions, and Excel
-      forces the second:
-      - Does the flag apply only when input is empty, or always (validating
-        or reordering columns when it is not)?
-      - At zero rows, emit a Table with its mandatory reserved row, or plain
-        header cells with no Table? A `ListObject` cannot be header-only, so
-        this fork has no neutral answer. It turns on whether the user wants
-        column names in the file or a Table to build on (structured
-        references, pivots, data entry).
-
-      Adding a flag widens the command surface, so this is a design call, not
-      an implementation detail.
 - [ ] Should releases cover Windows on ARM? Five targets ship as of 0.3.0:
       Linux on x86 and ARM (static musl, so any distribution), macOS on both
       architectures, and Windows on x86. Of what remains, Nushell's own
