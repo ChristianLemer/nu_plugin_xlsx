@@ -42,9 +42,12 @@ If [nushell#16711](https://github.com/nushell/nushell/issues/16711) lands and `f
 | `chrono`                                       | `0.4`             | Date/time mapping                    |
 
 The two `nu-*` crates are pinned to an exact version (`=0.115.1`, not `0.115`)
-because that version *is* the plugin's compatibility contract — see
-[Nushell version compatibility](#nushell-version-compatibility). `Cargo.toml`
-is the authority for which one; this table deliberately does not restate it.
+**in a release**, because that version *is* the plugin's compatibility contract
+— see [Nushell version compatibility](#nushell-version-compatibility). On
+`trunk` they sit on caret ranges, which still resolve to a single minor and
+serve as the default for a local build; the exact pins arrive with the bump
+commit that cuts a variant. `Cargo.toml` is the authority for which one; this
+table deliberately does not restate it.
 
 ## Nushell version compatibility
 
