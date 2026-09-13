@@ -6,7 +6,7 @@ edition = "2021"
 # so plainly, instead of failing deep inside a dependency — this project exists
 # partly for people on distributions that lag.
 rust-version = "1.88"
-description = "A Nushell plugin for writing Excel (.xlsx) files"
+description = "Write Excel .xlsx files from Nushell. One binary per Nushell version; crates.io carries only the newest."
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/ChristianLemer/nu_plugin_xlsx"
