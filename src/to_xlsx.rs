@@ -109,6 +109,8 @@ pub(crate) fn write_workbook(
     raw: bool,
     span: nu_protocol::Span,
 ) -> Result<Vec<u8>, LabeledError> {
+    reject_duplicate_sheet_names(sheets, span)?;
+
     let date_format = Format::new().set_num_format(DATE_NUM_FORMAT);
     let mut workbook = Workbook::new();
 
@@ -122,9 +124,7 @@ pub(crate) fn write_workbook(
         };
 
         if records.is_empty() {
-            workbook.add_worksheet().set_name(sheet_name).map_err(|e| {
-                LabeledError::new("Failed to create worksheet").with_label(e.to_string(), span)
-            })?;
+            name_sheet(workbook.add_worksheet(), sheet_name, span)?;
             continue;
         }
 
@@ -141,9 +141,7 @@ pub(crate) fn write_workbook(
         })?;
 
         let worksheet = workbook.add_worksheet();
-        worksheet.set_name(sheet_name).map_err(|e| {
-            LabeledError::new("Failed to set sheet name").with_label(e.to_string(), span)
-        })?;
+        name_sheet(worksheet, sheet_name, span)?;
 
         // Column count validated above via num_cols: u16
         #[allow(clippy::cast_possible_truncation)]
@@ -258,6 +256,81 @@ fn write_cell(
     }
 
     Ok(())
+}
+
+const SHEET_NAME_RULES: &str = "Excel sheet names are 1 to 31 characters, cannot contain \
+                                [ ] : * ? / \\, cannot start or end with an apostrophe, and \
+                                must be unique regardless of case.";
+
+/// Name a worksheet, or explain which of Excel's rules the key broke.
+fn name_sheet(
+    sheet: &mut Worksheet,
+    name: &str,
+    span: nu_protocol::Span,
+) -> Result<(), LabeledError> {
+    sheet.set_name(name).map(|_| ()).map_err(|e| {
+        LabeledError::new(format!("Invalid sheet name \"{name}\""))
+            .with_label(sheet_name_problem(name, &e), span)
+            .with_help(SHEET_NAME_RULES)
+    })
+}
+
+/// Excel matches sheet names without regard to case, and `rust_xlsxwriter` only
+/// notices at save time — by which point the error can name neither key. Caught
+/// here instead, where both are still in hand.
+fn reject_duplicate_sheet_names(
+    sheets: &[(String, Value)],
+    span: nu_protocol::Span,
+) -> Result<(), LabeledError> {
+    let mut seen: Vec<(String, &str)> = Vec::with_capacity(sheets.len());
+    for (name, _) in sheets {
+        let folded = name.to_lowercase();
+        if let Some((_, first)) = seen.iter().find(|(f, _)| *f == folded) {
+            let detail = if *first == name.as_str() {
+                format!("\"{name}\" appears twice")
+            } else {
+                format!("\"{first}\" and \"{name}\" differ only in case")
+            };
+            return Err(LabeledError::new("Duplicate sheet name")
+                .with_label(detail, span)
+                .with_help(SHEET_NAME_RULES));
+        }
+        seen.push((folded, name));
+    }
+    Ok(())
+}
+
+/// Say which of Excel's sheet-name rules a key broke.
+///
+/// `rust_xlsxwriter` reports these as distinct error variants, but its messages
+/// name the constraint in library terms. A user who typed `Q1/Q2 2024` wants to
+/// read about the slash, not about a `SheetnameContainsInvalidCharacter`.
+/// Falls back to the library's own words for anything not enumerated here, so a
+/// new rule upstream degrades to a vaguer message rather than a wrong one.
+fn sheet_name_problem(name: &str, err: &XlsxError) -> String {
+    const FORBIDDEN: [char; 7] = ['[', ']', ':', '*', '?', '/', '\\'];
+    match err {
+        XlsxError::SheetnameCannotBeBlank(_) => "the name is empty".to_string(),
+        XlsxError::SheetnameLengthExceeded(_) => {
+            format!("{} characters, and Excel allows 31", name.chars().count())
+        }
+        XlsxError::SheetnameContainsInvalidCharacter(_) => {
+            let bad: Vec<String> = name
+                .chars()
+                .filter(|c| FORBIDDEN.contains(c))
+                .map(|c| format!("'{c}'"))
+                .collect();
+            if bad.is_empty() {
+                "contains a character Excel forbids".to_string()
+            } else {
+                format!("contains {}", bad.join(", "))
+            }
+        }
+        XlsxError::SheetnameStartsOrEndsWithApostrophe(_) => {
+            "starts or ends with an apostrophe".to_string()
+        }
+        other => other.to_string(),
+    }
 }
 
 #[cfg(test)]
@@ -376,6 +449,98 @@ mod tests {
         let string_val = Value::test_string("not a table");
         let sheets = vec![("Sheet1".to_string(), string_val)];
         assert!(write_workbook(&sheets, false, span()).is_err());
+    }
+
+    /// One sheet holding one row, under whatever name the test wants to try.
+    fn one_sheet(name: &str) -> Vec<(String, Value)> {
+        let row = Value::test_record(record! { "a" => Value::test_int(1) });
+        vec![(name.to_string(), Value::test_list(vec![row]))]
+    }
+
+    /// The text a user actually reads: title, labels and help, joined.
+    ///
+    /// Not `{err:?}` — `Debug` re-escapes, so a backslash comes back doubled
+    /// and a test asserting the opposite would pass against the wrong string.
+    fn failure_label(sheets: &[(String, Value)]) -> String {
+        let err = write_workbook(sheets, false, span()).expect_err("expected a rejection");
+        let labels: Vec<&str> = err.labels.iter().map(|l| l.text.as_str()).collect();
+        format!(
+            "{} | {} | {}",
+            err.msg,
+            labels.join(" "),
+            err.help.unwrap_or_default()
+        )
+    }
+
+    #[test]
+    fn sheet_name_error_names_the_forbidden_character() {
+        let msg = failure_label(&one_sheet("Q1/Q2 2024"));
+        assert!(msg.contains("Q1/Q2 2024"), "names the key: {msg}");
+        assert!(msg.contains("contains '/'"), "names the character: {msg}");
+    }
+
+    #[test]
+    fn sheet_name_error_names_every_forbidden_character() {
+        let msg = failure_label(&one_sheet("a[b]"));
+        assert!(msg.contains("'['"), "{msg}");
+        assert!(msg.contains("']'"), "{msg}");
+    }
+
+    #[test]
+    fn sheet_name_error_gives_the_length() {
+        let msg = failure_label(&one_sheet(&"x".repeat(32)));
+        assert!(msg.contains("32 characters"), "counts them: {msg}");
+        assert!(msg.contains("31"), "states the limit: {msg}");
+    }
+
+    /// A backslash is both a forbidden character and the one Rust's `Debug`
+    /// would double, so it proves the message echoes what the user typed.
+    #[test]
+    fn sheet_name_error_shows_the_name_as_typed() {
+        let msg = failure_label(&one_sheet("a\\b"));
+        assert!(msg.contains(r#""a\b""#), "no doubled backslash: {msg}");
+        assert!(msg.contains("contains '\\'"), "names it once: {msg}");
+    }
+
+    /// The help lists the rules, so it has to list the one just reported.
+    #[test]
+    fn sheet_name_help_covers_the_apostrophe_rule() {
+        let msg = failure_label(&one_sheet("'Q1'"));
+        assert!(msg.contains("apostrophe"), "label names it: {msg}");
+        assert!(
+            SHEET_NAME_RULES.contains("apostrophe"),
+            "and the help lists it"
+        );
+    }
+
+    #[test]
+    fn sheet_name_error_says_when_it_is_empty() {
+        let msg = failure_label(&one_sheet(""));
+        assert!(msg.contains("empty"), "{msg}");
+    }
+
+    /// Excel folds case, and the library only notices at save time, where the
+    /// two keys are no longer available to name.
+    #[test]
+    fn duplicate_sheet_names_differing_only_in_case_are_rejected() {
+        let row = Value::test_record(record! { "a" => Value::test_int(1) });
+        let sheets = vec![
+            ("Ventes".to_string(), Value::test_list(vec![row.clone()])),
+            ("ventes".to_string(), Value::test_list(vec![row])),
+        ];
+        let msg = failure_label(&sheets);
+        assert!(msg.contains("Ventes"), "{msg}");
+        assert!(msg.contains("ventes"), "{msg}");
+        assert!(msg.contains("case"), "{msg}");
+    }
+
+    /// The empty-table path creates its worksheet somewhere else, so it needs
+    /// its own proof that the name is checked the same way.
+    #[test]
+    fn an_empty_sheet_still_validates_its_name() {
+        let sheets = vec![("x/y".to_string(), Value::test_list(vec![]))];
+        let msg = failure_label(&sheets);
+        assert!(msg.contains("contains '/'"), "{msg}");
     }
 
     #[test]

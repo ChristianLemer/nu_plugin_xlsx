@@ -138,8 +138,16 @@ Then delete the binary the installer put in `$nu.data-dir | path join plugins`, 
 ## Good to know
 
 **Sheet names are Excel's rules, not ours.** At most 31 characters, not empty, none of
-`[ ] : * ? / \`, unique regardless of case. A key that breaks one fails the conversion with
-`Failed to set sheet name`; rename the key first:
+`[ ] : * ? / \`, unique regardless of case. A key that breaks one names the rule it broke:
+
+```
+× Invalid sheet name "Q1/Q2 2024"
+  ╰── contains '/'
+  help: Excel sheet names are 1 to 31 characters, cannot contain [ ] : * ? / \,
+        and must be unique regardless of case.
+```
+
+Rename the key:
 
 ```nushell
 $report | rename --column { "Q1/Q2 2024": "Q1-Q2 2024" } | save report.xlsx
@@ -163,7 +171,7 @@ survive: an empty table carries no schema in Nushell, so there is nothing to wri
 | You see | It means | Do |
 | --- | --- | --- |
 | `Failed to send plugin call`, `broken_pipe` | binary built for another Nushell minor | re-run the installer |
-| `Failed to set sheet name` | a key breaks a sheet-name rule | rename the key, see above |
+| `Invalid sheet name`, `Duplicate sheet name` | a key breaks an Excel rule, named in the message | rename the key, see above |
 | `Command does not support binary input` | xlsx bytes reached `to xlsx` twice | drop the extra `to xlsx` |
 | commands gone after restart | registered, not loaded | `plugin use xlsx` in your config |
 
