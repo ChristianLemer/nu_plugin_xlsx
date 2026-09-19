@@ -81,9 +81,11 @@ Assets on [Releases](https://github.com/ChristianLemer/nu_plugin_xlsx/releases) 
 | `x86_64-apple-darwin` | Intel Mac |
 | `x86_64-pc-windows-msvc` | Windows |
 
-Pick the one whose `nu<nu-version>` matches yours. Releases before 0.3.0 carry no ARM Linux build. Extract it — the binary inside is already
-named `nu_plugin_xlsx`, which matters because Nushell refuses to register a file whose name
-doesn't start with `nu_plugin_`:
+Pick the one whose `nu<nu-version>` matches yours. Releases before 0.3.0 carry no ARM
+Linux build.
+
+Extract it — the binary inside is already named `nu_plugin_xlsx`, which matters because
+Nushell refuses to register a file whose name doesn't start with `nu_plugin_`:
 
 ```nushell
 tar xzf nu_plugin_xlsx-nu0.115.1-x86_64-unknown-linux-musl.tar.gz
@@ -115,7 +117,7 @@ Only if you have Rust and want to build against your own Nushell.
 cargo install nu_plugin_xlsx --locked
 ```
 
-⚠️ **This picks the wrong build more often than not.** The Nushell target lives in the
+**This picks the wrong build more often than not.** The Nushell target lives in the
 version's build metadata (`0.2.3+nu-0.115.1`), and semver requires build metadata to be
 *ignored* during resolution — so cargo always takes the newest release, whichever Nushell
 it targets. On Nushell 0.113 you would get the 0.115 build, which cannot load.
@@ -209,9 +211,13 @@ decisions and their reasons, including why the scope is where it is.
 
 ## About
 
-This is my first open-source project. I've been a software engineer in enterprise environments for years but hadn't published anything publicly until now.
+This is my first open-source project. I've been a software engineer in enterprise environments
+for years but hadn't published anything publicly until now.
 
-This project is developed with [Claude Code](https://claude.ai/claude-code) as a pair programming partner. Design decisions, architecture, and the call on any review finding are human-driven. AI assists with implementation, research and iteration, and reviews every branch before it becomes a pull request.
+This project is developed with [Claude Code](https://claude.ai/claude-code) as a pair
+programming partner. Design decisions, architecture, and the call on any review finding are
+human-driven. AI assists with implementation, research and iteration, and reviews every branch
+before it becomes a pull request.
 
 ## License
 
