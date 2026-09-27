@@ -87,6 +87,13 @@ jobs:
       # The installer against the real GitHub releases, as a colleague runs it.
       # A minor listed before its variant is published only warns: the list
       # leads the release by one commit, and that gap must not block it.
+      #
+      # What runs here is a published build, not this branch, so it checks what
+      # the installer owes: the right build found, verified, and loading into
+      # this Nushell with one round trip. Not scripts/smoke.nu: that grows with
+      # the source, and a check added beside a fix would fail here against the
+      # last release until the next one ships. The full smoke runs on this
+      # branch just above, and on every packaged archive before a release.
       - name: Install the published build with install.nu
         shell: bash
         env:
@@ -106,7 +113,8 @@ jobs:
           fi
           echo "$out"
           nu --plugin-config "$RUNNER_TEMP/inst.msgpackz" \
-             --plugins "$RUNNER_TEMP/xlsx/nu_plugin_xlsx" -- scripts/smoke.nu
+             --plugins "$RUNNER_TEMP/xlsx/nu_plugin_xlsx" \
+             -c 'use std/assert; assert equal ([[a]; [1]] | to xlsx | from xlsx) {Sheet1: [[a]; [1.0]]}; print "published build loads and converts"'
 
   # The one check main requires. Matrix job names change whenever a minor is
   # added or dropped; this name does not, so the branch rule points here.
