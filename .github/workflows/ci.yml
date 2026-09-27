@@ -2,7 +2,7 @@ name: CI
 
 # One run per event, not two: a push to a pull-request branch used to fire on
 # the push and again on the pull request. Tags keep their run, since a tag
-# push also has to be seen green (see CLAUDE.md, "A tag push fires two
+# push also has to be seen green (see AGENTS.md, "A tag push fires two
 # workflows").
 on:
   push:

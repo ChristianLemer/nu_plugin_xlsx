@@ -19,7 +19,7 @@ exclude = [
   ".github/",
   ".coderabbit.yaml",
   ".gitignore",
-  "CLAUDE.md",
+  "AGENTS.md",
   "scripts/",
   "*.code-workspace",
 ]
