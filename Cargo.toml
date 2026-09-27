@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_xlsx"
-version = "0.3.2"
+version = "0.3.2+nu-0.116.0"
 edition = "2021"
 # The nu-* crates set the floor, and it rises with each Nushell minor: 1.93.1
 # for 0.113, 1.95.0 for 0.114 and 0.115, 1.96.1 for 0.116. Declared as the
@@ -28,8 +28,8 @@ exclude = [
 ]
 
 [dependencies]
-nu-plugin = "0.113.0"
-nu-protocol = { version = "0.113.0", features = ["plugin"] }
+nu-plugin = "=0.116.0"
+nu-protocol = { version = "=0.116.0", features = ["plugin"] }
 chrono = "0.4"
 rust_xlsxwriter = { version = "0.99", features = ["chrono", "zmij"] }
 
