@@ -26,8 +26,8 @@ this repo used it, and any jj trace you meet is stale.
   one no worktree can take: git refuses the same branch in two places.
 - Every change, the maintainer's included, goes on a short branch named for the work
   (`installer-checksum`, not `check-status-latest-commit`), gets a pull request, merges with a
-  **rebase** so the line stays straight, and the branch is deleted at merge. Squash only when the
-  commits carry no reasoning worth keeping — here they usually do.
+  **rebase** so the line stays straight, and the branch is deleted at merge. GitHub enforces it:
+  rebase is the only merge method the repository allows, and `main` requires linear history.
 - No stale branches on the remote. A branch that is merged, or whose commit a tag already holds,
   is deleted. Visitors read the branch list as the state of the project.
 - Tags are the releases, and they point at commits that hang off `main` — see *Release hygiene*.
