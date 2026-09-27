@@ -28,6 +28,12 @@ this repo used it, and any jj trace you meet is stale.
   (`installer-checksum`, not `check-status-latest-commit`), gets a pull request, merges with a
   **rebase** so the line stays straight, and the branch is deleted at merge. GitHub enforces it:
   rebase is the only merge method the repository allows, and `main` requires linear history.
+- **The unit of history is the commit, not the pull request.** Each commit stands on its own: one
+  decision, with its reason in the message. Squash locally before pushing when small commits make
+  no sense apart — a fixup, a typo in the previous commit, a step that only works with the next —
+  and keep separate the ones that each carry a reason. Squashing is a judgement per branch, not
+  a rule per pull request: a pull request is how a set of such commits reaches `main`, and it is
+  never collapsed into one, which is also why GitHub offers no squash merge here.
 - No stale branches on the remote. A branch that is merged, or whose commit a tag already holds,
   is deleted. Visitors read the branch list as the state of the project.
 - Tags are the releases, and they point at commits that hang off `main` — see *Release hygiene*.
