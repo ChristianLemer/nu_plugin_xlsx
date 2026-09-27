@@ -1,0 +1,17 @@
+# Orca worktree setup — https://www.onorca.dev/docs/model/worktrees
+#
+# meta and docs are symlinks to the maintainer's notes folder, which lives outside the
+# repository and is synced between machines (AGENTS.md, "The meta and docs symlinks"). A new
+# worktree would start without them. Listed here, Orca gives each new worktree its own meta
+# and docs, taken from the primary checkout, so the notes follow every piece of work.
+#
+# Only the names are declared: where the notes live stays a per-machine fact, set once in the
+# primary checkout. An entry missing there is skipped, so this is inert for anyone else.
+#
+# Their .gitignore entries must keep no trailing slash. `meta/` matches a directory only, and a
+# symlink is a file to git: with the slash no link is ignored, in any checkout, and the next
+# `git add -A` commits one with a local path inside (see also stablyai/orca#11077).
+worktree:
+  sharedDirectories:
+    - meta
+    - docs
