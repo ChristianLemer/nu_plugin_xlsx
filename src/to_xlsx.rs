@@ -23,7 +23,7 @@ impl PluginCommand for ToXlsx {
          Use --raw for plain cells.\n\n\
          Note: `save` invokes `to xlsx` automatically based on the file extension, \
          so `ls | save files.xlsx` works directly. \
-         `ls | to xlsx | save files.xlsx` also works: `save` writes binary as it is."
+         Pipe through `to xlsx` explicitly to pass a flag: `ls | to xlsx --raw | save files.xlsx`."
     }
 
     fn signature(&self) -> Signature {
@@ -77,6 +77,14 @@ impl PluginCommand for ToXlsx {
         let span = call.head;
         let raw = call.has_flag("raw")?;
         let input = input.into_value(span)?;
+
+        // Binary passthrough. `save foo.xlsx` converts a binary value by its extension,
+        // calling this command directly and so bypassing the parser's input-type check:
+        // `to xlsx --raw | save foo.xlsx` arrives here a second time, as the bytes the
+        // first call produced. Hand them back unchanged. See SPEC.md before removing it.
+        if let Value::Binary { .. } = &input {
+            return Ok(PipelineData::Value(input, None));
+        }
 
         let sheets = match &input {
             Value::List { .. } => {

@@ -157,6 +157,13 @@ Rename the key:
 $report | rename --column { "Q1/Q2 2024": "Q1-Q2 2024" } | save report.xlsx
 ```
 
+**A flag needs the explicit form.** `save files.xlsx` calls `to xlsx` for you, without options.
+To pass one, pipe through the command yourself:
+
+```nushell
+ls | to xlsx --raw | save files.xlsx
+```
+
 **Reading it back needs no plugin.** Nushell's own `from xlsx` does it, first row as column
 names. Excel stores every number as a float, so `30` comes back as `30.00` unless you ask
 (the flag exists from Nushell 0.114):
