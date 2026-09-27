@@ -6,6 +6,9 @@
 #
 # Read by scripts/test-nu-compat.sh and .github/workflows/ci.yml. To add or drop
 # a minor, edit this file: nothing else needs to know the list.
+#
+# A newer minor can need a newer Rust: its nu-plugin declares a rust-version, and
+# Cargo.toml's rust-version must be at least that. Check it when adding a line.
 0.113.1
 0.114.1
 0.115.1

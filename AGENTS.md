@@ -64,8 +64,8 @@ this repo used it, and any jj trace you meet is stale.
 
 None of this travels with the clone, and each item below has cost time at least once.
 
-**Toolchain.** Rust stable 1.88 or newer (`rust-version` in `Cargo.toml` states it: the
-spreadsheet library's zip layer sets the floor), edition 2021, plus a Nushell whose minor matches the `+nu-`
+**Toolchain.** Rust stable 1.96.1 or newer (`rust-version` in `Cargo.toml` states it: the
+`nu-*` crates of the newest supported Nushell set the floor), edition 2021, plus a Nushell whose minor matches the `+nu-`
 metadata you intend to build against. No system packages are needed: the dependency tree
 carries no C library, so a bare `cargo build` suffices.
 
@@ -125,7 +125,8 @@ mise install aqua:nushell/nushell@0.113.1 aqua:nushell/nushell@0.114.1
 
 CI runs the same script per minor on every push (`nu-compat` in `ci.yml`), and the release
 workflow runs `install.nu` plus the smoke on every packaged archive before uploading it. To
-add or drop a minor, edit `supported-nu.txt` and nothing else.
+add or drop a minor, edit `supported-nu.txt` — and when a newer minor's `nu-*` crates
+need a newer Rust, raise `rust-version` in `Cargo.toml` to match.
 
 **Run the CI gates before committing.** `cargo fmt -- --check` is a gate, not a suggestion, and
 it is the one that gets forgotten; clippy runs stricter in CI than a bare `cargo clippy` does
