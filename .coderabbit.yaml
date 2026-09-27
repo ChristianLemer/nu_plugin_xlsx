@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://docs.coderabbit.ai/coderabbit.schema.json
 #
 # Off by default, summoned when wanted: `@coderabbitai review` on a pull request. The first
-# review of a branch happens before its first push instead — see CLAUDE.md. This bot earns its
+# review of a branch happens before its first push instead — see AGENTS.md. This bot earns its
 # place as a second opinion on a change a colleague will run, because it is a different system
 # with different blind spots.
 #

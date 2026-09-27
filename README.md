@@ -189,7 +189,7 @@ cargo test --locked
 ./scripts/test-nu-compat.sh --all
 ```
 
-[CLAUDE.md](CLAUDE.md) has the setup for that last one. [SPEC.md](SPEC.md) holds the design
+[AGENTS.md](AGENTS.md) has the setup for that last one. [SPEC.md](SPEC.md) holds the design
 decisions and their reasons; read it before widening the command's surface.
 
 ## About

@@ -1,4 +1,4 @@
-# Claude notes for nu_plugin_xlsx
+# Agent notes for nu_plugin_xlsx
 
 Project-specific instructions for AI assistants working in this repo.
 
@@ -193,7 +193,7 @@ version field that no longer matches anything misleads whoever reads it next.
 
 **Commit convention for releases:**
 
-A release cut is an **isolated "Bump" commit**: it changes the `Cargo.toml` version string, the two `nu-*` exact pins, and the cascading `Cargo.lock` — nothing else. Any other change — CI, docs, non-`nu` deps, CLAUDE.md — goes in its *own* commit that lands before the bump. The tag points at the pure-bump commit.
+A release cut is an **isolated "Bump" commit**: it changes the `Cargo.toml` version string, the two `nu-*` exact pins, and the cascading `Cargo.lock` — nothing else. Any other change — CI, docs, non-`nu` deps, AGENTS.md — goes in its *own* commit that lands before the bump. The tag points at the pure-bump commit.
 
 **The `nu-*` pins belong in the bump, not in an infra commit.** They are not a separate decision: `+nu-0.114.1` and `=0.114.1` state one fact in two places, and splitting them would leave a commit where the guard fails by construction.
 

@@ -82,7 +82,7 @@ the Nushell target rides in build metadata: `0.2.1+nu-0.114.1`. One release per
 Nushell minor, each pinning `nu-plugin` and `nu-protocol` exactly to the
 version its metadata names. `scripts/check-nu-metadata.sh` enforces the match
 mechanically, so the claim cannot rot. Release mechanics live in
-[CLAUDE.md](CLAUDE.md).
+[AGENTS.md](AGENTS.md).
 
 **Consequence for source.** A single source tree serves every supported minor —
 there is no version-gated code, and adding any would be a regression. Prefer
@@ -203,7 +203,7 @@ open --raw report.xlsx | from xlsx
 ```text
 nu_plugin_xlsx/
 ├── Cargo.toml
-├── CLAUDE.md                     # Working conventions: git workflow, release mechanics
+├── AGENTS.md                     # Working conventions: git workflow, release mechanics
 ├── LICENSE
 ├── README.md
 ├── SPEC.md
