@@ -177,7 +177,22 @@ survive: an empty table carries no schema in Nushell, so there is nothing to wri
 | `does not support binary input` | xlsx bytes reached `to xlsx` twice | drop the extra one |
 | commands gone after restart | registered, not loaded | `plugin use xlsx` in your config |
 
+## What it doesn't do
+
+No formulas, no charts, no conditional formatting, no print layout. One flag, `--raw`.
+
+**Not a technical limit — the current scope.**
+[`rust_xlsxwriter`](https://docs.rs/rust_xlsxwriter) can do all of it. This plugin does what its
+own use calls for: publishing data in Excel format. Nothing here has needed a formula or a chart
+yet, and a feature with no real scenario behind it can be neither designed well nor tested
+properly.
+
 ## Contributing
+
+Issues and pull requests are welcome, and so are needs this plugin doesn't cover yet. If you
+need formulas, charts or anything else it leaves out, open an issue and describe the file you
+need: what it has to show, and who has to read it. That scenario is what the feature is missing.
+I'm glad to extend the plugin with you around it, and to take on the implementation.
 
 The gates CI runs, plus the check that one source tree still serves every supported
 Nushell minor:
@@ -190,7 +205,7 @@ cargo test --locked
 ```
 
 [AGENTS.md](AGENTS.md) has the setup for that last one. [SPEC.md](SPEC.md) holds the design
-decisions and their reasons; read it before widening the command's surface.
+decisions and their reasons, including why the scope is where it is.
 
 ## About
 
