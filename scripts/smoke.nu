@@ -35,4 +35,28 @@ assert equal ($row.d | format date "%Y-%m-%d") "2024-01-02"
 let bad: any = "not a table"
 assert (try { $bad | to xlsx; false } catch { true }) "a string must be rejected"
 
+# The examples `to xlsx --help` shows. They are read back from Nushell rather
+# than copied here, so the help text and this check cannot drift apart. Each
+# runs in a fresh directory, since `save` refuses to overwrite, in a child
+# Nushell loading this same plugin through a throwaway registry, so a
+# registered build cannot answer in its place. An example passes when it
+# succeeds and either writes an .xlsx that reads back, or returns xlsx bytes.
+let plugin = (plugin list | where name == xlsx | get 0.filename)
+let examples = (scope commands | where name == "to xlsx" | get 0.examples)
+assert ($examples | is-not-empty) "`to xlsx` declares no examples"
+for ex in $examples {
+  let dir = (mktemp --directory)
+  "seed" | save ($dir | path join seed.txt)
+  let script = $"cd r#'($dir)'#; ($ex.example) | describe"
+  let run = (^$nu.current-exe --no-config-file --plugin-config ($dir | path join plugins.msgpackz) --plugins $plugin -c $script | complete)
+  assert equal $run.exit_code 0 $"example failed: ($ex.example)\n($run.stderr)"
+  let written = (ls $dir | where name =~ '\.xlsx$' | get name)
+  if ($written | is-empty) {
+    assert ($run.stdout | str trim | str starts-with "binary") $"example wrote no file and returned no xlsx bytes: ($ex.example)"
+  } else {
+    for f in $written { open --raw $f | from xlsx | ignore }
+  }
+  rm -r -f $dir
+}
+
 print $"smoke ok · Nushell ((version).version)"
