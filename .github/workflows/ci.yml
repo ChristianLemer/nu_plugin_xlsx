@@ -6,7 +6,7 @@ name: CI
 # workflows").
 on:
   push:
-    branches: [trunk]
+    branches: [main]
     tags: ["v*"]
   pull_request:
 
@@ -108,7 +108,7 @@ jobs:
           nu --plugin-config "$RUNNER_TEMP/inst.msgpackz" \
              --plugins "$RUNNER_TEMP/xlsx/nu_plugin_xlsx" -- scripts/smoke.nu
 
-  # The one check trunk requires. Matrix job names change whenever a minor is
+  # The one check main requires. Matrix job names change whenever a minor is
   # added or dropped; this name does not, so the branch rule points here.
   ci:
     needs: [check, nu-compat]
