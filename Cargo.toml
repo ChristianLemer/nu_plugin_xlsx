@@ -8,7 +8,7 @@ edition = "2021"
 # included — says so plainly instead of failing deep inside a dependency. Raise
 # it when a newer minor is added.
 rust-version = "1.96.1"
-description = "Write Excel .xlsx files from Nushell. One binary per Nushell version; crates.io carries only the newest."
+description = "Write Nushell tables to Excel as real Excel Tables, typed and ready to sort."
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/ChristianLemer/nu_plugin_xlsx"
