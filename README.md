@@ -49,8 +49,8 @@ The installer reads the Nushell running it, downloads the matching build, verifi
 checksum and registers it. No Rust toolchain. Then add `plugin use xlsx` to your config so
 the command survives a restart — `plugin add` registers, it does not load.
 
-Builds exist for the current Nushell minor and the two before it — the exact list is
-[supported-nu.txt](supported-nu.txt). Check yours with `version | get version`.
+Builds exist for the current Nushell minor and the ones before it that are still in use — the
+exact list is [supported-nu.txt](supported-nu.txt). Check yours with `version | get version`.
 
 > **Arrived from crates.io?** Only one build is published there, the one targeting the newest
 > supported Nushell, because cargo ignores the `+nu-` part of a version when it resolves. Every
