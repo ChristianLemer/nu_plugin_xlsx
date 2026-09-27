@@ -21,6 +21,9 @@ this repo used it, and any jj trace you meet is stale.
 
 - `main` is the only long-lived branch and the GitHub default. It moves only by merging
   a pull request whose checks are green. Never commit to it directly, never force-push it.
+- The primary checkout only follows `main`, and nothing is worked on in it. Worktrees are
+  created from it and take their `meta` and `docs` from it, and a branch checked out there is
+  one no worktree can take: git refuses the same branch in two places.
 - Every change, the maintainer's included, goes on a short branch named for the work
   (`installer-checksum`, not `check-status-latest-commit`), gets a pull request, merges with a
   **rebase** so the line stays straight, and the branch is deleted at merge. Squash only when the
@@ -68,15 +71,18 @@ carries no C library, so a bare `cargo build` suffices.
 
 **The `meta` and `docs` symlinks.** The maintainer keeps plans, notes and specs in a folder
 outside the repository, synced between machines. `meta` points at that folder, `docs` at its
-`docs/` subdirectory. Both are absolute, so the path differs per machine. Set `V` to it, then
-check the links resolve — `ln -s` succeeds happily on a path that does not exist, and the
-failure only surfaces much later:
+`docs/` subdirectory. Both are absolute, so the path differs per machine. Create them once, in
+the primary checkout: set `V` to it, then check the links resolve — `ln -s` succeeds happily
+on a path that does not exist, and the failure only surfaces much later:
 
 ```bash
 V="$HOME/…"        # the project's notes folder on this machine
 ln -s "$V" meta && ln -s "$V/docs" docs
 ls meta/ docs/     # both must list, or the links are dangling
 ```
+
+Worktrees get theirs without asking: `orca.yaml` lists both, and Orca gives each new worktree
+its own, taken from the primary checkout.
 
 Both are ignored in `.gitignore`, so `git add -A` never picks them up and a checkout never
 touches them. See the comment there for why the entries carry no trailing slash: with one, a
