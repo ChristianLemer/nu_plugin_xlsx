@@ -28,6 +28,31 @@ composable — the binary can go to `http post`, be hashed, or be streamed. That
 
 Ship `to xlsx` first. This is the missing capability.
 
+### Current scope: publishing data
+
+`to xlsx` covers what its own use calls for: publishing Nushell data in Excel
+format. That means the type mapping, the date format, autofit, and a real Excel
+Table with its auto-filter — whatever makes the data legible once it arrives.
+
+It does not write formulas, charts, conditional formatting, data validation or
+print layout. That is not a technical limit: `rust_xlsxwriter` implements most
+of Excel, `write_formula` included. It is the current scope, drawn around the
+only scenarios this project has to design and test against. A feature built
+with no real case behind it is guessed rather than designed, and can be tested
+against nothing but itself.
+
+**The scope grows from scenarios.** Someone who needs a formula or a chart is
+the scenario that feature is missing. The way in is an issue describing the
+file they need — what it has to show, and who has to read it — rather than the
+option they have in mind: a described file leaves the design open, and gives
+the implementation something to be tested against. Given such a scenario, the
+extension is designed with the person who brought it, and implemented here.
+
+A likely first case is a live totals row. An Excel Table can carry one —
+`TableColumn::set_total_function` writes `=SUBTOTAL(109,…)` — and it
+recomputes when the reader filters or edits, which a total computed in the
+pipeline cannot do. It is exactly the kind of request this section invites.
+
 ### Future — Read (conditional)
 
 If [nushell#16711](https://github.com/nushell/nushell/issues/16711) lands and `from xlsx` is removed from core, this plugin may absorb it. Until then, `from xlsx` is out of scope.
