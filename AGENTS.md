@@ -244,6 +244,12 @@ green while `fmt`/`clippy`/`test` is red on the same tag — and watching only b
 gh run list --branch "vX.Y.Z+nu-A.B.C"
 ```
 
+**Push the tags one at a time.** GitHub creates no push event when more than three tags
+arrive in a single push, so `git push origin 'refs/tags/v0.3.2+nu-*'` with four variants
+fired nothing — no `Release`, no `CI` — and the tags sat on the remote looking published.
+The fix was to delete them and push each on its own. Four variants means four pushes; the
+`gh run list` above is also how you notice that nothing started.
+
 ### One release, one variant per supported Nushell minor
 
 A release is not a single artifact. The same code is cut once per Nushell minor still supported, and those cuts **share a semver** — they differ only in build metadata, which is precisely what semver says build metadata is for: the same version, built differently.
