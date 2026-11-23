@@ -125,7 +125,7 @@ a throwaway registry. The working copy is never touched. The shells come from mi
 side, and only the default is on PATH:
 
 ```bash
-mise install aqua:nushell/nushell@0.113.1 aqua:nushell/nushell@0.114.1
+grep -v '^#' supported-nu.txt | grep . | sed 's|^|aqua:nushell/nushell@|' | xargs mise install
 ./scripts/test-nu-compat.sh --all        # or one: ./scripts/test-nu-compat.sh 0.114.1
 ```
 
