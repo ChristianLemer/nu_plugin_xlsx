@@ -420,7 +420,7 @@ mod tests {
 
         let sheets = vec![("Sheet1".to_string(), table)];
         let bytes = write_workbook(&sheets, true, span()).expect("write_workbook failed");
-        assert!(!bytes.is_empty());
+        assert_ne!(bytes.len(), 0, "a workbook is never zero bytes");
     }
 
     #[test]
