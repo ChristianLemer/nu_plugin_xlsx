@@ -35,6 +35,11 @@ assert equal ($row.d | format date "%Y-%m-%d") "2024-01-02"
 let bad: any = "not a table"
 assert (try { $bad | to xlsx; false } catch { true }) "a string must be rejected"
 
+# Bytes that are not a workbook must not pass through: a `.xlsx` name on arbitrary
+# data is a mistake, and the message points at `save --raw` for the rare intent.
+let bad: any = 0x[00 01 02]
+assert (try { $bad | to xlsx; false } catch { true }) "non-xlsx bytes must be refused"
+
 # The examples `to xlsx --help` shows. They are read back from Nushell rather
 # than copied here, so the help text and this check cannot drift apart. Each
 # runs in a fresh directory, since `save` refuses to overwrite, in a child

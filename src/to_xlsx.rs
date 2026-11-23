@@ -30,6 +30,9 @@ impl PluginCommand for ToXlsx {
         Signature::build("to xlsx")
             .input_output_type(Type::table(), Type::Binary)
             .input_output_type(Type::record(), Type::Binary)
+            // Binary in, binary out: the passthrough below, declared so the engine's
+            // input-type check lets it through. See SPEC.md, "Binary passthrough".
+            .input_output_type(Type::Binary, Type::Binary)
             .switch(
                 "raw",
                 "Write plain cells instead of an Excel Table",
@@ -79,11 +82,18 @@ impl PluginCommand for ToXlsx {
         let input = input.into_value(span)?;
 
         // Binary passthrough. `save foo.xlsx` converts a binary value by its extension,
-        // calling this command directly and so bypassing the parser's input-type check:
-        // `to xlsx --raw | save foo.xlsx` arrives here a second time, as the bytes the
-        // first call produced. Hand them back unchanged. See SPEC.md before removing it.
-        if let Value::Binary { .. } = &input {
-            return Ok(PipelineData::Value(input, None));
+        // so `to xlsx --raw | save foo.xlsx` reaches this command a second time, with the
+        // bytes the first call produced. Hand a workbook back unchanged; refuse other
+        // bytes, since the only way they get here is a .xlsx name on data that is not
+        // one. Declared in the signature, because from Nushell 0.117 `save` evaluates
+        // the converter through the engine, which checks input types first.
+        if let Value::Binary { val, .. } = &input {
+            if is_zip(val) {
+                return Ok(PipelineData::Value(input, None));
+            }
+            return Err(LabeledError::new("Binary input is not an xlsx workbook")
+                .with_label("no zip signature at the start of these bytes", input.span())
+                .with_help("to write these bytes as they are, use `save --raw`"));
         }
 
         let sheets = match &input {
@@ -104,6 +114,13 @@ impl PluginCommand for ToXlsx {
 
 /// How a date cell is rendered. `autofit` cannot see this, hence [`date_column_width`].
 const DATE_NUM_FORMAT: &str = "yyyy-mm-dd hh:mm:ss";
+
+/// An xlsx file is a zip archive with at least one entry, so it starts with the
+/// local-file-header signature. An empty archive starts differently and is
+/// never a workbook, so it is not accepted.
+fn is_zip(bytes: &[u8]) -> bool {
+    bytes.starts_with(b"PK\x03\x04")
+}
 
 /// Width a date column needs, derived from the format so the two cannot drift.
 fn date_column_width() -> f64 {
@@ -421,6 +438,27 @@ mod tests {
         let sheets = vec![("Sheet1".to_string(), table)];
         let bytes = write_workbook(&sheets, true, span()).expect("write_workbook failed");
         assert_ne!(bytes.len(), 0, "a workbook is never zero bytes");
+    }
+
+    #[test]
+    fn is_zip_accepts_only_a_local_file_header() {
+        assert!(is_zip(b"PK\x03\x04rest"));
+        assert!(!is_zip(b"PK\x05\x06"), "an empty archive is not a workbook");
+        assert!(!is_zip(&[0x00, 0x01, 0x02]));
+        assert!(!is_zip(b""));
+    }
+
+    #[test]
+    fn written_workbook_passes_the_zip_check() {
+        let table = Value::test_list(vec![Value::test_record(
+            record! { "a" => Value::test_int(1) },
+        )]);
+        let sheets = vec![("Sheet1".to_string(), table)];
+        let bytes = write_workbook(&sheets, false, span()).expect("write_workbook failed");
+        assert!(
+            is_zip(&bytes),
+            "the passthrough must accept what the writer produces"
+        );
     }
 
     #[test]

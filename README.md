@@ -183,7 +183,7 @@ survive: an empty table carries no schema in Nushell, so there is nothing to wri
 | --- | --- | --- |
 | `Failed to send plugin call` | built for another Nushell minor | re-run the installer |
 | `Invalid sheet name` | a key breaks an Excel rule | rename the key, see above |
-| `does not support binary input` | xlsx bytes reached `to xlsx` twice | drop the extra one |
+| `Binary input is not an xlsx workbook` | a `.xlsx` name on bytes that are not one | `save --raw` if that is meant |
 | commands gone after restart | registered, not loaded | `plugin use xlsx` in your config |
 
 ## What it doesn't do
