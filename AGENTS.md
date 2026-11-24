@@ -55,6 +55,13 @@ this repo used it, and any jj trace you meet is stale.
   tell you: a CI job red on macOS or Windows, or a red release rehearsal — `gh workflow run`
   resolves the workflow file server-side, so the branch must be pushed before it can run.
   Nothing else earns one.
+- **Do not stack a pull request on another's branch.** When a branch needs a fix that sits on
+  another open branch, wait for that one to merge and rebase on `main` before opening the
+  pull request. Opened against the other branch instead, it dies with it: GitHub **closes** a
+  pull request whose base branch is deleted, and a closed one can be neither reopened nor
+  retargeted — the commits survive, the pull request has to be opened again (#32 → #34). If a
+  stack is unavoidable, merge the lower one without deleting its branch, retarget the upper
+  one to `main`, and delete the branch afterwards.
 - **Say what the review changed, not what it said.** The description is for whoever reads the
   pull request, not a transcript: a finding you declined and why, and any question it settled.
   A finding that settles a design question goes into `SPEC.md` as well, since a pull request
