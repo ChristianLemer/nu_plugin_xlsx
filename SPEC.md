@@ -102,12 +102,14 @@ the tree to each and loads the result into that exact Nushell
 (`scripts/test-nu-compat.sh`), so the promise below is checked on every push
 rather than asserted.
 
-**Consequence for releases.** The plugin's own semver tracks *this* project;
-the Nushell target rides in build metadata: `0.2.1+nu-0.114.1`. One release per
-Nushell minor, each pinning `nu-plugin` and `nu-protocol` exactly to the
-version its metadata names. `scripts/check-nu-metadata.sh` enforces the match
-mechanically, so the claim cannot rot. Release mechanics live in
-[AGENTS.md](AGENTS.md).
+**Consequence for releases.** The plugin's own semver tracks *this* project; the
+Nushell target rides in build metadata: `0.2.1+nu-0.114.1`. One release per
+Nushell minor, each pinning `nu-plugin` and `nu-protocol` exactly to the version
+its metadata names. `scripts/check-nu-metadata.sh` enforces the match
+mechanically, so the claim cannot rot. Supporting a new minor is a patch release
+even when the source is unchanged: crates.io ignores build metadata and keeps
+one variant per semver, so only a new semver lets it carry the newest minor.
+Release mechanics live in [AGENTS.md](AGENTS.md).
 
 **Consequence for source.** A single source tree serves every supported minor —
 there is no version-gated code, and adding any would be a regression. Prefer
